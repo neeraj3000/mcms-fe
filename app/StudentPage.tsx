@@ -7,6 +7,7 @@ import FeedbackForm from '../src/screens/Student/FeedbackScreen';
 import ReportIssue from '../src/screens/Student/IssueReportScreen';
 import IssueHistory from '../src/screens/Student/HistoryScreen';
 import AllIssues from '../src/screens/Student/AllIssuesScreen';
+import Issues from '../src/screens/Student/Issues'
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 
@@ -67,7 +68,7 @@ const StudentPage = ({ navigation }: StudentPageProps) => {
       initialRouteName="StudentHome"
       drawerContent={(props) => <CustomDrawerContent {...props} />} // Custom Drawer Content
       screenOptions={{
-        headerTitle: 'Menu', // Set header title as 'Menu' for each screen
+        headerTitle: 'Student', // Set header title as 'Menu' for each screen
         drawerStyle: {
           backgroundColor: '#fff',
           width: 240,
@@ -88,9 +89,7 @@ const StudentPage = ({ navigation }: StudentPageProps) => {
     >
       <Drawer.Screen name="StudentHome" component={StudentHomePage} />
       <Drawer.Screen name="Feedback" component={FeedbackForm} />
-      <Drawer.Screen name="Report Issue" component={ReportIssue} />
-      <Drawer.Screen name="View History" component={IssueHistory} />
-      <Drawer.Screen name="Similar Issues" component={AllIssues} />
+      <Drawer.Screen name="Issues" component={Issues} />
     </Drawer.Navigator>
   );
 };

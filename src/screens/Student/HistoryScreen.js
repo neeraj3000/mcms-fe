@@ -12,97 +12,104 @@ import {
 } from "react-native";
 import axios from "axios";
 import { useSession } from "../../SessionContext";
-import { useIsFocused } from "@react-navigation/native"; // Import useIsFocused
+import RefreshButton from "../../components/RefreshButton"; // Import the RefreshButton component
 
 const IssueHistory = () => {
   const [issueHistory, setIssueHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIssue, setSelectedIssue] = useState(null); // State for selected issue
-  const [isModalVisible, setIsModalVisible] = useState(false); // State for modal visibility
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const { user } = useSession();
-  const isFocused = useIsFocused(); // Check if the screen is in focus
 
   const fetchIssueHistory = async () => {
     if (!user) return;
     try {
-      setLoading(true); // Show loader while fetching
-      console.log("Fetching issue history for user ID:", user.id);
+      setLoading(true);
       const response = await axios.get(
         `https://mcms-nseo.onrender.com/complaints/issues/user/${user.id}`
       );
-
-      console.log("API Response:", JSON.stringify(response.data));
-
       if (response.data.success && Array.isArray(response.data.issues)) {
         setIssueHistory(response.data.issues);
-        console.log("Issue History State Updated:", response.data.issues);
       } else {
         Alert.alert("Error", "No valid issues found.");
       }
     } catch (error) {
       console.error("Error fetching issue history:", error);
-      Alert.alert(
-        "Error",
-        "Unable to fetch issue history. Please try again later."
-      );
+      Alert.alert("Error", "Unable to fetch issue history. Please try again later.");
     } finally {
-      setLoading(false); // Hide loader after fetching
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isFocused) {
-      fetchIssueHistory(); // Fetch data when the screen is focused
-    }
-  }, [isFocused, user]); // Re-run when focus changes or user session changes
+    fetchIssueHistory();
+  }, []);
 
   const openModal = (issue) => {
-    setSelectedIssue(issue); // Set the selected issue
-    setIsModalVisible(true); // Show the modal
+    setSelectedIssue(issue);
+    setIsModalVisible(true);
   };
 
   const closeModal = () => {
-    setSelectedIssue(null); // Clear selected issue
-    setIsModalVisible(false); // Hide the modal
+    setSelectedIssue(null);
+    setIsModalVisible(false);
   };
 
-  const renderIssueItem = (item, index) => {
-    return (
-      <TouchableOpacity
-        style={styles.issueItem}
-        key={index}
-        onPress={() => openModal(item)}
-      >
-        <Text style={styles.issueCategory}>Category: {item.category}</Text>
-        <Text style={styles.issueStatus}>Status: {item.status}</Text>
-        <Text style={styles.issueDate}>
-          Date:{" "}
-          {new Date(item.created_at).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </Text>
-      </TouchableOpacity>
-    );
+  const reraisedIssue = async (issueId) => {
+    try {
+      const response = await axios.put(
+        `https://mcms-nseo.onrender.com/complaints/issues/status/${issueId}`,
+        { status: "reraised" }
+      );
+
+      if (response.data.success) {
+        setIssueHistory((prevIssues) =>
+          prevIssues.map((issue) =>
+            issue.id === issueId ? { ...issue, status: "reraised" } : issue
+          )
+        );
+        Alert.alert("Success", "The issue has been reraised.");
+      } else {
+        Alert.alert("Error", "Unable to reraised the issue. Please try again later.");
+      }
+    } catch (error) {
+      console.error("Error reraising issue:", error);
+      Alert.alert("Error", "Unable to reraised the issue. Please try again later.");
+    }
   };
 
   const renderModalContent = () => {
     if (!selectedIssue) return null;
 
+    const isResolved = selectedIssue.status === "resolved";
+
     return (
       <ScrollView style={styles.modalContent}>
-        <Text style={styles.modalCategory}>
-          Category: {selectedIssue.category}
-        </Text>
-        <Text style={styles.modalDescription}>
-          Description: {selectedIssue.description}
-        </Text>
+        <Text style={styles.modalCategory}>Category: {selectedIssue.category}</Text>
+        <Text style={styles.modalDescription}>Description: {selectedIssue.description}</Text>
         {selectedIssue.image && (
-          <Image
-            source={{ uri: selectedIssue.image.url }} // Adjust based on your image field structure
-            style={styles.issueImage}
-          />
+          <Image source={{ uri: selectedIssue.image.url }} style={styles.issueImage} />
+        )}
+        {isResolved && (
+          <View style={styles.reraisedContainer}>
+            <Text style={styles.reraisedText}>
+              This issue has been resolved. Would you like to reraised it?
+            </Text>
+            <View style={styles.reraisedButtons}>
+              <TouchableOpacity
+                style={styles.reraisedButton}
+                onPress={() => reraisedIssue(selectedIssue.id)}
+              >
+                <Text style={styles.reraisedButtonText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reraisedButton}
+                onPress={closeModal}
+              >
+                <Text style={styles.reraisedButtonText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
       </ScrollView>
     );
@@ -114,7 +121,33 @@ const IssueHistory = () => {
       {loading ? (
         <ActivityIndicator size="large" color="#007BFF" />
       ) : issueHistory.length > 0 ? (
-        issueHistory.map((item, index) => renderIssueItem(item, index))
+        issueHistory.map((item) => (
+          <TouchableOpacity
+            style={styles.issueItem}
+            key={item.id} // Ensure the key is unique
+            onPress={() => openModal(item)}
+          >
+            <Text style={styles.issueCategory}>Category: {item.category}</Text>
+            <Text
+              style={[
+                styles.issueStatus,
+                item.status === "resolved" && styles.resolvedStatus,
+                item.status === "pending" && styles.pendingStatus,
+                item.status === "reraised" && styles.reraisedStatus,
+              ]}
+            >
+              Status: {item.status}
+            </Text>
+            <Text style={styles.issueDate}>
+              Date:{" "}
+              {new Date(item.created_at).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </Text>
+          </TouchableOpacity>
+        ))
       ) : (
         <Text style={styles.noIssuesText}>No issues reported yet.</Text>
       )}
@@ -134,6 +167,8 @@ const IssueHistory = () => {
           </View>
         </View>
       </Modal>
+
+      <RefreshButton onRefresh={fetchIssueHistory} />
     </View>
   );
 };
@@ -165,7 +200,15 @@ const styles = StyleSheet.create({
   issueStatus: {
     fontSize: 14,
     marginTop: 5,
-    color: "#007BFF",
+  },
+  resolvedStatus: {
+    color: "green",
+  },
+  pendingStatus: {
+    color: "orange",
+  },
+  reraisedStatus: {
+    color: "red",
   },
   issueDate: {
     fontSize: 12,
@@ -215,6 +258,28 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  reraisedContainer: {
+    marginTop: 20,
+  },
+  reraisedText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#dc3545",
+  },
+  reraisedButtons: {
+    flexDirection: "row",
+    marginTop: 10,
+  },
+  reraisedButton: {
+    backgroundColor: "#28a745",
+    padding: 10,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  reraisedButtonText: {
     color: "#fff",
     fontSize: 16,
   },
