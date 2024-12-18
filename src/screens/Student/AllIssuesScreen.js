@@ -53,7 +53,7 @@ const AllIssues = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `https://mess-management-system-be-1.onrender.com/complaints/issues?page=${page}&limit=20`
+          `https://mcms-nseo.onrender.com/complaints/issues`
         );
 
         const issuesData = response.data.issues;
@@ -95,7 +95,7 @@ const AllIssues = () => {
     
     // Optionally, make an API call to update the server with the new status
     try {
-      await axios.put(`https://mcms-nseo.onrender.com//complaints/issues/${id}`, {
+      await axios.put(`https://mcms-nseo.onrender.com/complaints/issues/${id}`, {
         status: "Resolved",
       });
     } catch (error) {
@@ -116,10 +116,7 @@ const AllIssues = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Student</Text>
-        <Icon name="ellipsis-vertical" size={24} color="#000" />
-      </View>
+     
       <Text style={styles.title}>All Issues</Text>
 
       {/* FlatList for issues */}

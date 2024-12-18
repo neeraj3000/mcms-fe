@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
+import RefreshButton from '../../components/RefreshButton';  // Import RefreshButton
 
 const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
   return (
@@ -40,39 +41,39 @@ const AllIssues = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
   // Fetch issues with pagination
-  useEffect(() => {
-    const fetchIssues = async () => {
-      if (loading || !hasMore) return;
+  const fetchIssues = async () => {
+    if (loading || !hasMore) return;
 
-      setLoading(true);
-      try {
-        const response = await axios.get(
-          `https://mess-management-system-be-1.onrender.com/complaints/issues?page=${page}&limit=20`
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `https://mcms-nseo.onrender.com/complaints/issues`
+      );
+
+      const issuesData = response.data.issues;
+
+      if (Array.isArray(issuesData)) {
+        const newIssues = issuesData.filter(
+          (newIssue) =>
+            !issues.some(
+              (existingIssue) => existingIssue.issueId === newIssue.issueId
+            )
         );
 
-        const issuesData = response.data.issues;
-
-        if (Array.isArray(issuesData)) {
-          const newIssues = issuesData.filter(
-            (newIssue) =>
-              !issues.some(
-                (existingIssue) => existingIssue.issueId === newIssue.issueId
-              )
-          );
-
-          setIssues((prevIssues) => [...prevIssues, ...newIssues]);
-          setHasMore(newIssues.length > 0);
-        } else {
-          console.error("Unexpected response format:", response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching issues:", error);
-        Alert.alert("Error", "Failed to fetch issues from the server.");
-      } finally {
-        setLoading(false);
+        setIssues((prevIssues) => [...prevIssues, ...newIssues]);
+        setHasMore(newIssues.length > 0);
+      } else {
+        console.error("Unexpected response format:", response.data);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching issues:", error);
+      Alert.alert("Error", "Failed to fetch issues from the server.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchIssues();
   }, [page]);
 
@@ -119,12 +120,14 @@ const AllIssues = () => {
     setSelectedIssue(null);
   };
 
+  const handleRefresh = () => {
+    setPage(1);  // Reset pagination
+    setIssues([]);  // Clear the issues list
+    fetchIssues();  // Fetch issues again
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Student</Text>
-        <Icon name="ellipsis-vertical" size={24} color="#000" />
-      </View>
       <Text style={styles.title}>All Issues</Text>
 
       <FlatList
@@ -188,6 +191,8 @@ const AllIssues = () => {
           <Text style={styles.loadMoreText}>Load More</Text>
         </TouchableOpacity>
       )}
+
+      <RefreshButton onRefresh={handleRefresh} /> 
     </View>
   );
 };
