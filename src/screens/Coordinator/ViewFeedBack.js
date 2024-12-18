@@ -1,212 +1,256 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Dimensions,
-  ScrollView,
-  Alert,
-  Button,
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import { PieChart } from "react-native-chart-kit";
-import axios from "axios";
+import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { PieChart, BarChart } from "react-native-chart-kit";
+import { Button, Menu, Provider } from "react-native-paper";
+import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+
+const screenWidth = Dimensions.get("window").width;
+
+const categories = [
+  "TimelinessOfService",
+  "CleanlinessOfDiningHall",
+  "FoodQuality",
+  "QuantityOfFood",
+  "CourtesyOfStaff",
+  "StaffHygiene",
+  "MenuAdherence",
+  "WashAreaCleanliness",
+  "Comments",
+];
 
 const FeedbackScreen = () => {
-  // State to store filter values and feedback data
-  const [categories, setCategories] = useState([]);
-  const [ratings, setRatings] = useState([]);
-  const [feedbackDurations, setFeedbackDurations] = useState([]); // Added state for feedback duration
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedRating, setSelectedRating] = useState("All");
-  const [selectedFeedbackDuration, setSelectedFeedbackDuration] =
-    useState("All"); // Added state for feedback duration
-  const [feedbackData, setFeedbackData] = useState([]);
-  const [chartData, setChartData] = useState([]);
-const extractCategoriesAndRatings = (data) => {
-    const extractedCategories = Array.from(
-      new Set(data.map((item) => item.category))
-    );
-    const extractedRatings = Array.from(
-      new Set(data.map((item) => item.rating))
-    );
+  const [selectedCategory, setSelectedCategory] = useState("FoodQuality");
+  const [feedbackData, setFeedbackData] = useState({
+    messFeedback: [],
+    timeFeedback: [],
+  });
 
-    setCategories(extractedCategories);
-    setRatings(extractedRatings);
-  };
+  const [menuVisible, setMenuVisible] = useState(false);
 
-  const extractFeedbackDurations = (data) => {
-    const extractedDurations = Array.from(
-      new Set(data.map((item) => item.FeedbackDuration))
-    );
-    setFeedbackDurations(extractedDurations);
-  };
-
-  // API URL for fetching feedback data (replace with your actual URL)
-  const apiUrl =
-    "https://mcms-nseo.onrender.com/complaints/feedback";
-
-  // Function to fetch feedback data
-  const fetchFeedbackData = async () => {
-    try {
-      const feedbackResponse = await axios.get(apiUrl);
-      console.log(feedbackResponse.data);
-
-      // Check if feedback data is an array and set it
-      if (Array.isArray(feedbackResponse.data)) {
-        setFeedbackData(feedbackResponse.data);
-        extractCategoriesAndRatings(feedbackResponse.data);
-        extractFeedbackDurations(feedbackResponse.data); // Extract feedback durations
-      } else {
-        setFeedbackData([]);
-      }
-    } catch (error) {
-      console.error("Error fetching feedback data", error);
-      Alert.alert("Error", "Failed to load feedback data.");
-    }
-  };
-
-  // Function to extract unique categories, ratings, and feedback durations from the feedback data
-  
-  // Function to process feedback data for chart representation
-  const processChartData = (data) => {
-    const processedData = categories.map((category) => {
-      const categoryFeedback = data.filter(
-        (feedback) => feedback.category === category
-      );
-
-      const feedbackCounts = ratings.map((rating) => {
-        const count = categoryFeedback.filter(
-          (feedback) => feedback.rating === rating
-        ).length;
-        return {
-          name: rating,
-          feedbackCount: count,
-          color: getColorForRating(rating),
-        };
-      });
-
-      return {
-        category,
-        data: feedbackCounts,
+  useEffect(() => {
+    // Simulated backend data fetch
+    const fetchData = async () => {
+      const data = {
+        messFeedback: [
+          { name: "Mess A", FoodQuality: 80, StaffHygiene: 70 },
+          { name: "Mess B", FoodQuality: 60, StaffHygiene: 85 },
+          { name: "Mess C", FoodQuality: 90, StaffHygiene: 75 },
+        ],
+        timeFeedback: [
+          { label: "Jun-Jul", FoodQuality: 70, StaffHygiene: 60 },
+          { label: "Jul-Aug", FoodQuality: 80, StaffHygiene: 70 },
+        ],
       };
-    });
+      setFeedbackData(data);
+    };
 
-    setChartData(processedData);
+    fetchData();
+  }, []);
+
+  // Prepare Pie Chart Data for Mess Feedback
+  const pieDataMess = feedbackData.messFeedback.map((item, index) => ({
+    name: item.name,
+    population: item[selectedCategory] || 0,
+    color: ["#007BFF", "#28A745", "#FFC107"][index],
+    legendFontColor: "#000",
+    legendFontSize: 12,
+  }));
+
+  // Prepare Pie Chart Data for Time Feedback
+  const pieDataTime = feedbackData.timeFeedback.map((item, index) => ({
+    name: item.label,
+    population: item[selectedCategory] || 0,
+    color: ["#007BFF", "#28A745", "#FFC107", "#DC3545"][index],
+    legendFontColor: "#000",
+    legendFontSize: 12,
+  }));
+
+  // Prepare Bar Chart Data for Mess Feedback
+  const barDataMess = {
+    labels: feedbackData.messFeedback.map((item) => item.name),
+    datasets: [
+      {
+        data: feedbackData.messFeedback.map(
+          (item) => item[selectedCategory] || 0
+        ),
+      },
+    ],
   };
 
-  // Function to return color based on the feedback rating
-  const getColorForRating = (rating) => {
-    switch (rating) {
-      case "1":
-        return "#ff6347"; // Red
-      case "2":
-        return "#ff4500"; // Dark Red
-      case "3":
-        return "#ff9800"; // Orange
-      case "4":
-        return "#32cd32"; // Green
-      case "5":
-        return "#1e90ff"; // Blue
-      default:
-        return "#000000";
-    }
+  // Prepare Bar Chart Data for Time Feedback
+  const barDataTime = {
+    labels: feedbackData.timeFeedback.map((item) => item.label),
+    datasets: [
+      {
+        data: feedbackData.timeFeedback.map(
+          (item) => item[selectedCategory] || 0
+        ),
+      },
+    ],
   };
 
-  // Fetch feedback data when the component is mounted or filters change
-  useEffect(() => {
-    fetchFeedbackData();
-  }, []); // Empty dependency array ensures the fetch happens only once when the component is mounted
+  // Tab Routes
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: "mess", title: "Feedback by Mess" },
+    { key: "time", title: "Feedback by Time Period" },
+  ]);
 
-  useEffect(() => {
-    if (feedbackData.length > 0) {
-      processChartData(feedbackData);
-    }
-  }, [
-    feedbackData,
-    selectedCategory,
-    selectedRating,
-    selectedFeedbackDuration,
-  ]); // Re-run when feedbackData, filters change
+  // Tab Scenes
+  const renderScene = SceneMap({
+    mess: () => (
+      <ScrollView>
+        {/* Pie Chart for Feedback by Mess */}
+        <Text style={styles.chartTitle}>
+          {selectedCategory} by Mess (Pie Chart)
+        </Text>
+        <PieChart
+          data={pieDataMess}
+          width={screenWidth - 32}
+          height={220}
+          chartConfig={chartConfig}
+          accessor={"population"}
+          backgroundColor={"transparent"}
+          paddingLeft={"15"}
+          absolute
+        />
+
+        {/* Bar Chart for Feedback by Mess */}
+        <Text style={styles.chartTitle}>
+          {selectedCategory} by Mess (Bar Chart)
+        </Text>
+        <BarChart
+          data={barDataMess}
+          width={screenWidth - 32}
+          height={220}
+          yAxisLabel=""
+          chartConfig={chartConfig}
+          verticalLabelRotation={30}
+        />
+      </ScrollView>
+    ),
+    time: () => (
+      <ScrollView>
+        {/* Pie Chart for Feedback Over Time */}
+        <Text style={styles.chartTitle}>
+          {selectedCategory} Over Time (Pie Chart)
+        </Text>
+        <PieChart
+          data={pieDataTime}
+          width={screenWidth - 32}
+          height={220}
+          chartConfig={chartConfig}
+          accessor={"population"}
+          backgroundColor={"transparent"}
+          paddingLeft={"15"}
+          absolute
+        />
+
+        {/* Bar Chart for Feedback Over Time */}
+        <Text style={styles.chartTitle}>
+          {selectedCategory} Over Time (Bar Chart)
+        </Text>
+        <BarChart
+          data={barDataTime}
+          width={screenWidth - 32}
+          height={220}
+          yAxisLabel=""
+          chartConfig={chartConfig}
+          verticalLabelRotation={30}
+        />
+      </ScrollView>
+    ),
+  });
 
   return (
-    <ScrollView style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 18 }}>Select Category:</Text>
-      <Picker
-        selectedValue={selectedCategory}
-        onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-      >
-        {categories.length > 0 ? (
-          categories.map((category, index) => (
-            <Picker.Item key={index} label={category} value={category} />
-          ))
-        ) : (
-          <Picker.Item label="No Categories Available" value="" />
-        )}
-      </Picker>
+    <Provider>
+      <View style={styles.container}>
+        <Text style={styles.title}>Mess Feedback Dashboard</Text>
 
-      <Text style={{ fontSize: 18 }}>Select Rating:</Text>
-      <Picker
-        selectedValue={selectedRating}
-        onValueChange={(itemValue) => setSelectedRating(itemValue)}
-      >
-        <Picker.Item label="All Ratings" value="All" />
-        {ratings.length > 0 ? (
-          ratings.map((rating, index) => (
-            <Picker.Item key={index} label={rating} value={rating} />
-          ))
-        ) : (
-          <Picker.Item label="No Ratings Available" value="" />
-        )}
-      </Picker>
+        {/* Category Filter */}
+        <View style={styles.filterContainer}>
+          <Text style={styles.label}>Select Category: </Text>
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <Button mode="outlined" onPress={() => setMenuVisible(true)}>
+                {selectedCategory}
+              </Button>
+            }
+          >
+            {categories.map((category) => (
+              <Menu.Item
+                key={category}
+                title={category}
+                onPress={() => {
+                  setSelectedCategory(category);
+                  setMenuVisible(false);
+                }}
+              />
+            ))}
+          </Menu>
+        </View>
 
-      <Text style={{ fontSize: 18 }}>Select Feedback Duration:</Text>
-      <Picker
-        selectedValue={selectedFeedbackDuration}
-        onValueChange={(itemValue) => setSelectedFeedbackDuration(itemValue)}
-      >
-        <Picker.Item label="All Durations" value="All" />
-        {feedbackDurations.length > 0 ? (
-          feedbackDurations.map((duration, index) => (
-            <Picker.Item key={index} label={duration} value={duration} />
-          ))
-        ) : (
-          <Picker.Item label="No Feedback Durations Available" value="" />
-        )}
-      </Picker>
-
-      <Button title="View Feedback" onPress={fetchFeedbackData} />
-
-      {chartData.length > 0 ? (
-        chartData.map((categoryData, index) => (
-          <View key={index} style={{ marginTop: 20 }}>
-            <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-              {categoryData.category} Feedback:
-            </Text>
-            <PieChart
-              data={categoryData.data}
-              width={Dimensions.get("window").width - 40}
-              height={220}
-              chartConfig={{
-                backgroundColor: "#e26a00",
-                backgroundGradientFrom: "#fb8c00",
-                backgroundGradientTo: "#ff9800",
-                decimalPlaces: 2,
-                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-              }}
-              accessor="feedbackCount"
-              backgroundColor="transparent"
-              paddingLeft="15"
+        {/* Tabs */}
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          initialLayout={{ width: screenWidth }}
+          renderTabBar={(props) => (
+            <TabBar
+              {...props}
+              indicatorStyle={{ backgroundColor: "blue" }}
+              style={{ backgroundColor: "blue" }}
+              labelStyle={{ color: "blue" }}
             />
-          </View>
-        ))
-      ) : (
-        <Text>No feedback data available for the selected filters.</Text>
-      )}
-    </ScrollView>
+          )}
+        />
+      </View>
+    </Provider>
   );
 };
+
+const chartConfig = {
+  backgroundGradientFrom: "#ffffff",
+  backgroundGradientTo: "#ffffff",
+  decimalPlaces: 0,
+  color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  style: {
+    borderRadius: 16,
+  },
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f4f4f4",
+    paddingTop: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  filterContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 8,
+  },
+  label: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 12,
+  },
+});
 
 export default FeedbackScreen;

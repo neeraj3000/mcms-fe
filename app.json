@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "mess",
-    "slug": "mess",
+    "slug": "mess-jtamjyq2zlrbjhxutlzgc",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.starlord78.mess"
     },
     "android": {
       "adaptiveIcon": {
@@ -43,9 +44,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "b03d5654-45f4-4f61-a545-723c1e1843d9"
+        "projectId": "13306d7b-6c93-4f98-8263-a9ddb3f2d99f"
       }
     },
-    "owner": "neeraj3000"
+    "owner": "starlord78"
   }
 }

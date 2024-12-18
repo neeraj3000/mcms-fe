@@ -1,13 +1,14 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import FeedbackScreen from "./ViewFeedBack";
+import Reports from "./Reports";
 
 const CoordinatorHome = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Welcome, Coordinator</Text>
       <View>
-        <FeedbackScreen />
+        <Reports />
       </View>
     </View>
   );

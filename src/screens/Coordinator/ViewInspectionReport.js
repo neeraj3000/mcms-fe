@@ -1,154 +1,75 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, FlatList, Alert } from "react-native";
-import * as Print from "expo-print";
-import * as FileSystem from "expo-file-system";
-import { Picker } from "@react-native-picker/picker"; // Updated Picker
+import React from "react";
+import { View, ScrollView, StyleSheet, Text } from "react-native";
+import { DataTable, Button } from "react-native-paper";
 
-const ViewInspectionReports = () => {
-  const [dates, setDates] = useState([]);
-  const [messNumbers, setMessNumbers] = useState([]);
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedMess, setSelectedMess] = useState("");
-  const [inspectionReports, setInspectionReports] = useState([]);
+const data = [
+  {
+    category: "100-Groceries",
+    avgPrice: "$1.36",
+    lastYear: "$810,176",
+    thisYear: "$829,776",
+    goal: "$810,176",
+    status: "✅",
+  },
+  {
+    category: "090-Home",
+    avgPrice: "$3.28",
+    lastYear: "$2,913,647",
+    thisYear: "$3,053,226",
+    goal: "$2,913,647",
+    status: "✅",
+  },
+  {
+    category: "070-Hosiery",
+    avgPrice: "$3.57",
+    lastYear: "$573,604",
+    thisYear: "$486,106",
+    goal: "$573,604",
+    status: "❌",
+  },
+];
 
-  // Mock API response for dates and mess numbers
-  useEffect(() => {
-    const mockDates = ["2024-12-10", "2024-12-11", "2024-12-12", "2024-12-13"];
-    const mockMessNumbers = ["1", "2", "3"];
-
-    setDates(mockDates);
-    setMessNumbers(mockMessNumbers);
-  }, []);
-
-  // Mock API response for fetching reports based on selected date and mess number
-  const fetchReports = () => {
-    if (!selectedDate || !selectedMess) {
-      Alert.alert("Please select both date and mess number.");
-      return;
-    }
-
-    const mockReports = [
-      {
-        messNumber: selectedMess,
-        date: selectedDate,
-        details:
-          "Report details for mess " + selectedMess + " on " + selectedDate,
-      },
-      {
-        messNumber: selectedMess,
-        date: selectedDate,
-        details:
-          "Additional report for mess " + selectedMess + " on " + selectedDate,
-      },
-    ];
-
-    setInspectionReports(mockReports);
-  };
-
-  // Generate PDF from the reports using expo-print
-  const generatePDF = async () => {
-    if (inspectionReports.length === 0) {
-      Alert.alert("No reports available to download.");
-      return;
-    }
-
-    // Create HTML content for the PDF
-    const htmlContent = `
-      <h1>Inspection Reports</h1>
-      ${inspectionReports
-        .map(
-          (report) => `
-          <h2>Report for Mess ${report.messNumber} on ${report.date}</h2>
-          <p><strong>Details:</strong> ${report.details}</p>
-        `
-        )
-        .join("")}
-    `;
-
-    try {
-      // Create a PDF from the HTML content
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-      });
-
-      // Save the file to the device file system
-      const fileUri = FileSystem.documentDirectory + "inspection_reports.pdf";
-      await FileSystem.moveAsync({
-        from: uri,
-        to: fileUri,
-      });
-
-      Alert.alert("Download Complete!", `PDF saved at: ${fileUri}`);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      Alert.alert("Error", "Failed to generate PDF.");
-    }
-  };
-
+const ReportTable = () => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>View Inspection Reports</Text>
+    <ScrollView horizontal>
+      <View>
+        <Text style={styles.title}>View Reports</Text>
+        <DataTable style={styles.table}>
+          {/* Table Header */}
+          <DataTable.Header>
+            <DataTable.Title>Category</DataTable.Title>
+            <DataTable.Title>Avg Price</DataTable.Title>
+            <DataTable.Title>Last Year</DataTable.Title>
+            <DataTable.Title>This Year</DataTable.Title>
+            <DataTable.Title>Goal</DataTable.Title>
+            <DataTable.Title>Status</DataTable.Title>
+          </DataTable.Header>
 
-      <Picker
-        selectedValue={selectedMess}
-        onValueChange={(itemValue) => setSelectedMess(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="Select Mess Number" value="" />
-        {messNumbers.map((messNumber, index) => (
-          <Picker.Item
-            key={index}
-            label={`Mess ${messNumber}`}
-            value={messNumber}
-          />
-        ))}
-      </Picker>
+          {/* Table Rows */}
+          {data.map((item, index) => (
+            <DataTable.Row key={index}>
+              <DataTable.Cell>{item.category}</DataTable.Cell>
+              <DataTable.Cell>{item.avgPrice}</DataTable.Cell>
+              <DataTable.Cell>{item.lastYear}</DataTable.Cell>
+              <DataTable.Cell>{item.thisYear}</DataTable.Cell>
+              <DataTable.Cell>{item.goal}</DataTable.Cell>
+              <DataTable.Cell>{item.status}</DataTable.Cell>
+            </DataTable.Row>
+          ))}
+        </DataTable>
 
-      <Picker
-        selectedValue={selectedDate}
-        onValueChange={(itemValue) => setSelectedDate(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="Select Date" value="" />
-        {dates.map((date, index) => (
-          <Picker.Item key={index} label={date} value={date} />
-        ))}
-      </Picker>
-
-      <Button title="Fetch Reports" onPress={fetchReports} />
-
-      {inspectionReports.length > 0 && (
-        <FlatList
-          data={inspectionReports}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.reportCard}>
-              <Text>Mess: {item.messNumber}</Text>
-              <Text>Date: {item.date}</Text>
-              <Text>Details: {item.details}</Text>
-            </View>
-          )}
-        />
-      )}
-
-      {inspectionReports.length > 0 && (
-        <Button title="Download Reports as PDF" onPress={generatePDF} />
-      )}
-    </View>
+        {/* Export Button */}
+        <Button mode="contained" onPress={() => alert("Exporting to Excel...")}>
+          Export to Excel
+        </Button>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
-  header: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
-  picker: { height: 50, width: "100%", marginBottom: 16 },
-  reportCard: {
-    padding: 16,
-    marginVertical: 8,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    elevation: 2,
-  },
+  title: { fontSize: 24, textAlign: "center", marginVertical: 10 },
+  table: { marginHorizontal: 10 },
 });
 
-export default ViewInspectionReports;
+export default ReportTable;
