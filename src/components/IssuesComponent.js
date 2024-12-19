@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import RefreshButton from "./RefreshButton"; // Import the RefreshButton component
+import getAllIssues from "../../backend/issuesnew";
 
 const IssuesComponent = ({ mode = "none" }) => {
   const [issues, setIssues] = useState([]);
@@ -26,44 +27,50 @@ const IssuesComponent = ({ mode = "none" }) => {
   const [votes, setVotes] = useState({});
 
   const fetchIssues = async () => {
-    if (loading || !hasMore) return;
-
-    setLoading(true);
+    if (loading || !hasMore) return; // Prevent fetching if already loading or no more issues to fetch
+  
+    setLoading(true); // Set loading state to true
     try {
-      const response = await axios.get(
-        `https://mcms-nseo.onrender.com/complaints/issues?page=${page}&limit=3`
-      );
-
-      const issuesData = response.data.issues;
-
-      if (Array.isArray(issuesData)) {
-        const newIssues = issuesData.filter(
-          (newIssue) =>
-            !issues.some(
-              (existingIssue) => existingIssue.issueId === newIssue.issueId
-            )
-        );
-
-        setIssues((prevIssues) => [...prevIssues, ...newIssues]);
-
-        const newVotes = {};
-        newIssues.forEach((issue) => {
-          newVotes[issue.issueId] = { upvoted: false, downvoted: false };
-        });
-        setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
-
-        setHasMore(newIssues.length > 0);
+      const response = await getAllIssues(); // Await the backend call
+  
+      if (response.success) {
+        const issuesData = response.issues; // Extract issues from response
+  
+        if (Array.isArray(issuesData)) {
+          // Filter out already existing issues
+          const newIssues = issuesData.filter(
+            (newIssue) =>
+              !issues.some(
+                (existingIssue) => existingIssue.issueId === newIssue.issueId
+              )
+          );
+  
+          setIssues((prevIssues) => [...prevIssues, ...newIssues]); // Update issues state
+  
+          // Prepare votes for the newly fetched issues
+          const newVotes = {};
+          newIssues.forEach((issue) => {
+            newVotes[issue.issueId] = { upvoted: false, downvoted: false };
+          });
+          setVotes((prevVotes) => ({ ...prevVotes, ...newVotes })); // Update votes state
+  
+          setHasMore(newIssues.length > 0); // Update hasMore based on new issues
+        } else {
+          console.error("Unexpected response format:", response.issues);
+          setHasMore(false); // No more issues to fetch
+        }
       } else {
-        console.error("Unexpected response format:", response.data);
-        setHasMore(false);
+        console.error("Failed to fetch issues:", response);
+        Alert.alert("Error", "Failed to fetch issues from the server.");
       }
     } catch (error) {
       console.error("Error fetching issues:", error);
       Alert.alert("Error", "Failed to fetch issues from the server.");
     } finally {
-      setLoading(false);
+      setLoading(false); // Reset loading state
     }
   };
+  
 
   useEffect(() => {
     fetchIssues();

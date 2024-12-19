@@ -1,4 +1,5 @@
 import React from "react";
+import { Alert } from "react-native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import {
@@ -12,19 +13,34 @@ import ViewIssues from "../src/screens/Coordinator/ViewIssues";
 import RequestInspections from "../src/screens/Coordinator/RequestInspections";
 import ReportTable from "../src/screens/Coordinator/Reports";
 import InspectionReports from "../src/screens/Coordinator/ViewInspectionReport";
-import { DrawerNavigationProp } from "@react-navigation/drawer";
 
 const Drawer = createDrawerNavigator();
 
-type AppNavigatorNavigationProp = DrawerNavigationProp<any>; // Define navigation prop type for AppNavigator
-
-const CustomDrawerContent = (props: any) => {
+const CustomDrawerContent = (props) => {
   const { logout } = useSession(); // Access logout function from session context
-  const { navigation }: { navigation: AppNavigatorNavigationProp } = props; // Type the navigation prop
+  const { navigation } = props; // Access navigation prop
 
   const handleLogout = () => {
-    logout(); // Clear session data
-    navigation.replace("Login"); // Prevent going back to previous screens
+    Alert.alert(
+      "Confirm Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => {}, // Do nothing on cancel
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          onPress: () => {
+            logout();
+            navigation.replace("Login"); // Navigate to Login screen
+          },
+          style: "destructive", // Optional: makes the button red
+        },
+      ],
+      { cancelable: true } // Dismiss alert by tapping outside
+    );
   };
 
   return (

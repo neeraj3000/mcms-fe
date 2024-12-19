@@ -72,14 +72,7 @@ const ReportIssue = () => {
         });
       }
 
-      const response = await axios.post(
-        "https://mcms-nseo.onrender.com/student/issues",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
+      const response = createIssue({description, issueType, image, })
       Alert.alert("Success", "Your issue has been reported.");
       setIssueType("");
       setDescription("");

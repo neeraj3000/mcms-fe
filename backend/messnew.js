@@ -1,5 +1,8 @@
-import { firestore} from './firebase'; // Import Firestore and Timestamp from firebase.js
-import { Timestamp } from 'firebase/firestore'; // Import Timestamp for timestamps
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, deleteDoc, orderBy, limit } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore"; // Import Timestamp for timestamps
+import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
+
+
 // Add Mess Representatives (MRs) by Emails
 async function addMessRepresentativesByEmails(messId, representativeEmails) {
   try {
@@ -7,11 +10,13 @@ async function addMessRepresentativesByEmails(messId, representativeEmails) {
       return { success: false, message: 'List of representative emails is required' };
     }
 
-    const usersRef = firestore.collection('users');
+    const usersRef = collection(firestore, 'users');
     const validEmails = [];
 
     for (const email of representativeEmails) {
-      const userSnapshot = await usersRef.where('email', '==', email).get();
+      const q = query(usersRef, where('email', '==', email));
+      const userSnapshot = await getDocs(q);
+
       if (userSnapshot.empty) {
         return { success: false, message: `User with email ${email} not found` };
       }
@@ -19,8 +24,8 @@ async function addMessRepresentativesByEmails(messId, representativeEmails) {
       const userDoc = userSnapshot.docs[0];
       const userId = userDoc.data().userId;
 
-      const representativeRef = firestore.collection('representative');
-      const repSnapshot = await representativeRef.where('userId', '==', userId).get();
+      const representativeRef = collection(firestore, 'representative');
+      const repSnapshot = await getDocs(query(representativeRef, where('userId', '==', userId)));
 
       if (!repSnapshot.empty) {
         validEmails.push(email);
@@ -29,8 +34,8 @@ async function addMessRepresentativesByEmails(messId, representativeEmails) {
       }
     }
 
-    const messRef = firestore.collection('mess');
-    const messSnapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const messSnapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (messSnapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -46,7 +51,7 @@ async function addMessRepresentativesByEmails(messId, representativeEmails) {
       }
     }
 
-    await messDoc.ref.update({ setofmr: updatedSetofMrEmails, updatedAt: Timestamp.now() });
+    await updateDoc(messDoc.ref, { setofmr: updatedSetofMrEmails, updatedAt: Timestamp.now() });
 
     return { success: true, message: 'Representatives added to mess successfully' };
   } catch (err) {
@@ -62,8 +67,8 @@ async function getBatchesByMessId(messId) {
       return { success: false, message: 'Mess ID is required' };
     }
 
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -86,8 +91,8 @@ async function getGenderByMessId(messId) {
       return { success: false, message: 'Mess ID is required' };
     }
 
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -106,8 +111,8 @@ async function getGenderByMessId(messId) {
 // Get All Supervisors in a Mess
 async function getSupervisorsByMessId(messId) {
   try {
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -125,8 +130,8 @@ async function getSupervisorsByMessId(messId) {
 // Get All Mess Representatives in a Mess
 async function getMessRepresentativesByMessId(messId) {
   try {
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -148,8 +153,8 @@ async function createMess({ name, capacity, batches = [], gender = null }) {
       return { success: false, message: 'Name and capacity are required.' };
     }
 
-    const messRef = firestore.collection('mess');
-    const lastMess = await messRef.orderBy('messId', 'desc').limit(1).get();
+    const messRef = collection(firestore, 'mess');
+    const lastMess = await getDocs(query(messRef, orderBy('messId', 'desc'), limit(1)));
     const newMessId = lastMess.empty ? 1 : lastMess.docs[0].data().messId + 1;
 
     const messData = {
@@ -163,7 +168,7 @@ async function createMess({ name, capacity, batches = [], gender = null }) {
       createdAt: Timestamp.now(),
     };
 
-    await messRef.doc(newMessId.toString()).set(messData);
+    await setDoc(doc(messRef, newMessId.toString()), messData);
     return { success: true, message: 'Mess created successfully', messId: newMessId };
   } catch (err) {
     console.error(err);
@@ -174,8 +179,8 @@ async function createMess({ name, capacity, batches = [], gender = null }) {
 // Get All Mess Documents
 async function getAllMess() {
   try {
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(messRef);
 
     if (snapshot.empty) {
       return { success: false, message: 'No mess records found' };
@@ -194,8 +199,8 @@ async function getAllMess() {
 // Get Mess Document by ID
 async function getMessById(messId) {
   try {
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -215,8 +220,8 @@ async function updateMessDetails(messId, { name, capacity, batches, gender }) {
       return { success: false, message: 'No details provided to update.' };
     }
 
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -232,7 +237,7 @@ async function updateMessDetails(messId, { name, capacity, batches, gender }) {
 
     updatedData.updatedAt = Timestamp.now();
 
-    await messDoc.ref.update(updatedData);
+    await updateDoc(messDoc.ref, updatedData);
     return { success: true, message: 'Mess details updated successfully' };
   } catch (err) {
     console.error(err);
@@ -243,15 +248,15 @@ async function updateMessDetails(messId, { name, capacity, batches, gender }) {
 // Delete Mess Document
 async function deleteMess(messId) {
   try {
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };
     }
 
     const messDoc = snapshot.docs[0];
-    await messDoc.ref.delete();
+    await deleteDoc(messDoc.ref);
 
     return { success: true, message: 'Mess deleted successfully' };
   } catch (err) {
@@ -267,15 +272,15 @@ async function addSupervisorToMess(messId, email) {
       return { success: false, message: 'Supervisor email is required' };
     }
 
-    const usersRef = firestore.collection('users');
-    const userSnapshot = await usersRef.where('email', '==', email).where('role', '==', 'supervisor').get();
+    const usersRef = collection(firestore, 'users');
+    const userSnapshot = await getDocs(query(usersRef, where('email', '==', email), where('role', '==', 'supervisor')));
 
     if (userSnapshot.empty) {
       return { success: false, message: 'Supervisor not found or invalid role.' };
     }
 
-    const messRef = firestore.collection('mess');
-    const messSnapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const messSnapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (messSnapshot.empty) {
       return { success: false, message: 'Mess not found' };
@@ -289,7 +294,7 @@ async function addSupervisorToMess(messId, email) {
     }
 
     const supervisorEmails = [...messData.supervisorEmails, email];
-    await messDoc.ref.update({ supervisorEmails, updatedAt: Timestamp.now() });
+    await updateDoc(messDoc.ref, { supervisorEmails, updatedAt: Timestamp.now() });
 
     return { success: true, message: 'Supervisor added successfully', supervisorEmails };
   } catch (err) {
@@ -305,8 +310,8 @@ async function getBatchesAndGenderByMessId(messId) {
       return { success: false, message: 'Mess ID is required' };
     }
 
-    const messRef = firestore.collection('mess');
-    const snapshot = await messRef.where('messId', '==', parseInt(messId)).get();
+    const messRef = collection(firestore, 'mess');
+    const snapshot = await getDocs(query(messRef, where('messId', '==', parseInt(messId))));
 
     if (snapshot.empty) {
       return { success: false, message: 'Mess not found' };

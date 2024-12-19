@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
-import RefreshButton from '../../components/RefreshButton';  // Import RefreshButton
+import RefreshButton from '../../components/RefreshButton';
 
 const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
   return (
@@ -22,15 +22,35 @@ const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
         <Text style={styles.issueTitle}>{title}</Text>
         <Text style={styles.issueStatus}>{status}</Text>
       </TouchableOpacity>
-      <View style={styles.resolveContainer}>
-        <TouchableOpacity onPress={onResolve}>
-          <Icon name="checkmark-circle-outline" size={24} color="#28a745" />
-        </TouchableOpacity>
-        <Text style={styles.resolveText}>Resolve</Text>
-      </View>
+      {status !== "resolved" && ( // Show resolve button only if the status is not resolved
+        <View style={styles.resolveContainer}>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                "Confirm Resolve",
+                "Are you sure you want to mark this issue as resolved?",
+                [
+                  {
+                    text: "Cancel",
+                    style: "cancel",
+                  },
+                  {
+                    text: "Confirm",
+                    onPress: onResolve,
+                  },
+                ]
+              );
+            }}
+            style={styles.resolveButton} // Button style
+          >
+            <Text style={styles.resolveButtonText}>Resolve</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 });
+
 
 const AllIssues = () => {
   const [issues, setIssues] = useState([]);
@@ -40,7 +60,6 @@ const AllIssues = () => {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Fetch issues with pagination
   const fetchIssues = async () => {
     if (loading || !hasMore) return;
 
@@ -95,7 +114,7 @@ const AllIssues = () => {
           const updatedIssues = [...prevIssues];
           updatedIssues[index] = {
             ...updatedIssues[index],
-            status: "Resolved",
+            status: "resolved",
           };
           return updatedIssues;
         });
@@ -121,9 +140,9 @@ const AllIssues = () => {
   };
 
   const handleRefresh = () => {
-    setPage(1);  // Reset pagination
-    setIssues([]);  // Clear the issues list
-    fetchIssues();  // Fetch issues again
+    setPage(1);
+    setIssues([]);
+    fetchIssues();
   };
 
   return (
@@ -136,7 +155,7 @@ const AllIssues = () => {
           <IssueItem
             key={item.issueId}
             id={item.issueId}
-            title={item.description}
+            title={item.category}
             status={item.status}
             onResolve={() => handleResolve(item.issueId, index)}
             onPress={() => openIssueModal(item)}
@@ -192,7 +211,7 @@ const AllIssues = () => {
         </TouchableOpacity>
       )}
 
-      <RefreshButton onRefresh={handleRefresh} /> 
+      <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
 };
@@ -202,16 +221,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f2f2f2",
     padding: 20,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: "bold",
   },
   title: {
     fontSize: 24,
@@ -247,11 +256,23 @@ const styles = StyleSheet.create({
     color: "#888",
   },
   resolveContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
   },
+  resolveButton: {
+    backgroundColor: "#28a745",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 5,
+  },
+  resolveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
   resolveText: {
-    marginLeft: 5,
     fontSize: 14,
     fontWeight: "bold",
     color: "#28a745",

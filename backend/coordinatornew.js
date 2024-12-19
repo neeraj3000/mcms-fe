@@ -1,7 +1,6 @@
-import { firestore} from './firebase'; // Import firestore and Timestamp
-import { Timestamp } from 'firebase/firestore'; // Import Timestamp for timestamps
-const bcrypt = require("bcryptjs");
-
+import { collection, getDocs, query, where, orderBy, limit, addDoc, doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { firestore } from './firebase';
+import bcrypt from 'bcrypt';
 
 // Salt rounds for bcrypt
 const saltRounds = 10;
@@ -13,34 +12,36 @@ export async function registerCoordinator(name, mobileNo, email, password) {
       throw new Error('All fields are required');
     }
 
-    const usersRef = firestore.collection('users');
-    const coordinatorsRef = firestore.collection('coordinator');
+    const usersRef = collection(firestore, 'users');
+    const coordinatorsRef = collection(firestore, 'coordinator');
 
-    const lastUser = await usersRef.orderBy('userId', 'desc').limit(1).get();
-    const newUserId = lastUser.empty ? 1 : lastUser.docs[0].data().userId + 1;
+    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
+    const lastUserSnapshot = await getDocs(lastUserQuery);
+    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const userData = {
       userId: newUserId,
       role: 'coordinator',
       email,
       password: hashedPassword,
-      createdAt: Timestamp.now(),
+      createdAt: serverTimestamp(),
     };
-    await usersRef.doc(newUserId.toString()).set(userData);
+    await addDoc(usersRef, userData);
 
-    const lastCoordinator = await coordinatorsRef.orderBy('coordinatorId', 'desc').limit(1).get();
-    const newCoordinatorId = lastCoordinator.empty ? 1 : lastCoordinator.docs[0].data().coordinatorId + 1;
+    const lastCoordinatorQuery = query(coordinatorsRef, orderBy('coordinatorId', 'desc'), limit(1));
+    const lastCoordinatorSnapshot = await getDocs(lastCoordinatorQuery);
+    const newCoordinatorId = lastCoordinatorSnapshot.empty ? 1 : lastCoordinatorSnapshot.docs[0].data().coordinatorId + 1;
 
     const coordinatorData = {
       coordinatorId: newCoordinatorId,
       name,
       mobileNo,
       userId: newUserId,
-      createdAt: Timestamp.now(),
+      createdAt: serverTimestamp(),
     };
-    await coordinatorsRef.doc(newCoordinatorId.toString()).set(coordinatorData);
+    await addDoc(coordinatorsRef, coordinatorData);
 
     return { success: true, message: 'Coordinator registered successfully', coordinatorId: newCoordinatorId };
   } catch (err) {
@@ -52,16 +53,14 @@ export async function registerCoordinator(name, mobileNo, email, password) {
 // Get All Coordinators
 export async function getAllCoordinators() {
   try {
-    const coordinatorsRef = firestore.collection('coordinator');
-    const snapshot = await coordinatorsRef.get();
+    const coordinatorsRef = collection(firestore, 'coordinator');
+    const snapshot = await getDocs(coordinatorsRef);
 
     if (snapshot.empty) {
       return { success: false, message: 'No coordinators found' };
     }
 
-    const coordinatorsList = [];
-    snapshot.forEach((doc) => coordinatorsList.push(doc.data()));
-
+    const coordinatorsList = snapshot.docs.map(doc => doc.data());
     return { success: true, coordinators: coordinatorsList };
   } catch (err) {
     console.error(err);
@@ -72,8 +71,9 @@ export async function getAllCoordinators() {
 // Get Coordinator by ID
 export async function getCoordinatorById(coordinatorId) {
   try {
-    const coordinatorsRef = firestore.collection('coordinator');
-    const snapshot = await coordinatorsRef.where('coordinatorId', '==', parseInt(coordinatorId)).get();
+    const coordinatorsRef = collection(firestore, 'coordinator');
+    const coordinatorQuery = query(coordinatorsRef, where('coordinatorId', '==', parseInt(coordinatorId)));
+    const snapshot = await getDocs(coordinatorQuery);
 
     if (snapshot.empty) {
       return { success: false, message: 'Coordinator not found' };
@@ -93,20 +93,23 @@ export async function updateCoordinatorProfile(coordinatorId, name, mobileNo) {
       throw new Error('At least one field is required to update');
     }
 
-    const coordinatorsRef = firestore.collection('coordinator');
-    const snapshot = await coordinatorsRef.where('coordinatorId', '==', parseInt(coordinatorId)).get();
+    const coordinatorsRef = collection(firestore, 'coordinator');
+    const coordinatorQuery = query(coordinatorsRef, where('coordinatorId', '==', parseInt(coordinatorId)));
+    const snapshot = await getDocs(coordinatorQuery);
 
     if (snapshot.empty) {
       return { success: false, message: 'Coordinator not found' };
     }
 
     const coordinatorDoc = snapshot.docs[0];
+    const coordinatorDocRef = doc(firestore, 'coordinator', coordinatorDoc.id);
+
     const updatedData = {};
     if (name) updatedData.name = name;
     if (mobileNo) updatedData.mobileNo = mobileNo;
-    updatedData.updatedAt = Timestamp.now();
+    updatedData.updatedAt = serverTimestamp();
 
-    await coordinatorDoc.ref.update(updatedData);
+    await updateDoc(coordinatorDocRef, updatedData);
 
     return { success: true, message: 'Coordinator profile updated successfully' };
   } catch (err) {
@@ -122,8 +125,9 @@ export async function updateCoordinatorPassword(coordinatorId, newPassword) {
       throw new Error('New password is required');
     }
 
-    const coordinatorsRef = firestore.collection('coordinator');
-    const snapshot = await coordinatorsRef.where('coordinatorId', '==', parseInt(coordinatorId)).get();
+    const coordinatorsRef = collection(firestore, 'coordinator');
+    const coordinatorQuery = query(coordinatorsRef, where('coordinatorId', '==', parseInt(coordinatorId)));
+    const snapshot = await getDocs(coordinatorQuery);
 
     if (snapshot.empty) {
       return { success: false, message: 'Coordinator not found' };
@@ -132,17 +136,20 @@ export async function updateCoordinatorPassword(coordinatorId, newPassword) {
     const coordinatorDoc = snapshot.docs[0];
     const userId = coordinatorDoc.data().userId;
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    const usersRef = firestore.collection('users');
-    const userSnapshot = await usersRef.where('userId', '==', userId).get();
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
 
     if (userSnapshot.empty) {
       return { success: false, message: 'User not found' };
     }
 
     const userDoc = userSnapshot.docs[0];
-    await userDoc.ref.update({ password: hashedPassword, updatedAt: Timestamp.now() });
+    const userDocRef = doc(firestore, 'users', userDoc.id);
+
+    await updateDoc(userDocRef, { password: hashedPassword, updatedAt: serverTimestamp() });
 
     return { success: true, message: 'Password updated successfully' };
   } catch (err) {
@@ -154,8 +161,9 @@ export async function updateCoordinatorPassword(coordinatorId, newPassword) {
 // Delete Coordinator by ID
 export async function deleteCoordinatorById(coordinatorId) {
   try {
-    const coordinatorsRef = firestore.collection('coordinator');
-    const snapshot = await coordinatorsRef.where('coordinatorId', '==', parseInt(coordinatorId)).get();
+    const coordinatorsRef = collection(firestore, 'coordinator');
+    const coordinatorQuery = query(coordinatorsRef, where('coordinatorId', '==', parseInt(coordinatorId)));
+    const snapshot = await getDocs(coordinatorQuery);
 
     if (snapshot.empty) {
       return { success: false, message: 'Coordinator not found' };
@@ -164,12 +172,16 @@ export async function deleteCoordinatorById(coordinatorId) {
     const coordinatorDoc = snapshot.docs[0];
     const userId = coordinatorDoc.data().userId;
 
-    await coordinatorDoc.ref.delete();
+    const coordinatorDocRef = doc(firestore, 'coordinator', coordinatorDoc.id);
+    await deleteDoc(coordinatorDocRef);
 
-    const usersRef = firestore.collection('users');
-    const userSnapshot = await usersRef.where('userId', '==', userId).get();
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+
     if (!userSnapshot.empty) {
-      await userSnapshot.docs[0].ref.delete();
+      const userDocRef = doc(firestore, 'users', userSnapshot.docs[0].id);
+      await deleteDoc(userDocRef);
     }
 
     return { success: true, message: 'Coordinator deleted successfully' };
@@ -182,8 +194,9 @@ export async function deleteCoordinatorById(coordinatorId) {
 // Get Supervisor by UserId
 export async function getSupervisorByUserId(userId) {
   try {
-    const supervisorsRef = firestore.collection('supervisor');
-    const snapshot = await supervisorsRef.where('userId', '==', userId).get();
+    const supervisorsRef = collection(firestore, 'supervisor');
+    const supervisorQuery = query(supervisorsRef, where('userId', '==', userId));
+    const snapshot = await getDocs(supervisorQuery);
 
     if (snapshot.empty) {
       return { success: false, message: 'Supervisor not found' };
@@ -196,4 +209,3 @@ export async function getSupervisorByUserId(userId) {
     return { success: false, error: err.message };
   }
 }
-
