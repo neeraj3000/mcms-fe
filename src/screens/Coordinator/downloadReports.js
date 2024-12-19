@@ -22,10 +22,92 @@ const InspectionReportScreen = () => {
     setIsLoading(true);
     try {
       // Simulate backend API call (replace with your API endpoint)
-      const response = await fetch(
-        "https://api.example.com/inspection-reports"
-      );
-      const data = await response.json();
+      // const response = await fetch(
+      //   "https://api.example.com/inspection-reports"
+      // );
+      // const data = await response.json();
+      const data = [
+        {
+          InspectionID: 1,
+          messNo: 1,
+          mrId: 1,
+          InspectionDate: "2024-12-15T22:23:27.000Z",
+          QualityAndExpiry: 4,
+          StandardsOfMaterials: 4,
+          StaffAndFoodAdequacy: 5,
+          MenuDiscrepancies: 3,
+          SupervisorUpdates: 4,
+          FoodTasteAndQuality: 5,
+          KitchenHygiene: 4,
+          UtensilCleanliness: 4,
+          ServiceTimingsAdherence: 4,
+          Comments: "Inspection completed successfully",
+        },
+        {
+          InspectionID: 2,
+          messNo: 2,
+          mrId: 2,
+          InspectionDate: "2024-12-15T22:23:27.000Z",
+          QualityAndExpiry: 3,
+          StandardsOfMaterials: 4,
+          StaffAndFoodAdequacy: 4,
+          MenuDiscrepancies: 4,
+          SupervisorUpdates: 3,
+          FoodTasteAndQuality: 4,
+          KitchenHygiene: 3,
+          UtensilCleanliness: 4,
+          ServiceTimingsAdherence: 3,
+          Comments: "Minor issues noted",
+        },
+        {
+          InspectionID: 3,
+          messNo: 3,
+          mrId: 3,
+          InspectionDate: "2024-12-15T22:23:27.000Z",
+          QualityAndExpiry: 4,
+          StandardsOfMaterials: 5,
+          StaffAndFoodAdequacy: 4,
+          MenuDiscrepancies: 4,
+          SupervisorUpdates: 4,
+          FoodTasteAndQuality: 5,
+          KitchenHygiene: 4,
+          UtensilCleanliness: 5,
+          ServiceTimingsAdherence: 5,
+          Comments: "Satisfactory",
+        },
+        {
+          InspectionID: 4,
+          messNo: 4,
+          mrId: 4,
+          InspectionDate: "2024-12-15T22:23:27.000Z",
+          QualityAndExpiry: 3,
+          StandardsOfMaterials: 3,
+          StaffAndFoodAdequacy: 3,
+          MenuDiscrepancies: 3,
+          SupervisorUpdates: 3,
+          FoodTasteAndQuality: 3,
+          KitchenHygiene: 3,
+          UtensilCleanliness: 3,
+          ServiceTimingsAdherence: 3,
+          Comments: "Average inspection",
+        },
+        {
+          InspectionID: 5,
+          messNo: 5,
+          mrId: 5,
+          InspectionDate: "2024-12-15T22:23:27.000Z",
+          QualityAndExpiry: 4,
+          StandardsOfMaterials: 4,
+          StaffAndFoodAdequacy: 4,
+          MenuDiscrepancies: 4,
+          SupervisorUpdates: 4,
+          FoodTasteAndQuality: 4,
+          KitchenHygiene: 4,
+          UtensilCleanliness: 4,
+          ServiceTimingsAdherence: 4,
+          Comments: "Good overall",
+        },
+      ];
 
       setInspectionReports(data);
       calculateStatistics(data);

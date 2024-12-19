@@ -1,75 +1,189 @@
-import React from "react";
-import { View, ScrollView, StyleSheet, Text } from "react-native";
-import { DataTable, Button } from "react-native-paper";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+} from "react-native";
+import { DataTable } from "react-native-paper";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import ExcelJS from "exceljs";
 
-const data = [
+// Sample inspection data
+const inspectionData = [
   {
-    category: "100-Groceries",
-    avgPrice: "$1.36",
-    lastYear: "$810,176",
-    thisYear: "$829,776",
-    goal: "$810,176",
-    status: "✅",
+    InspectionID: 1,
+    messNo: 1,
+    mrId: 1,
+    InspectionDate: "2024-12-15T22:23:27.000Z",
+    QualityAndExpiry: 4,
+    StandardsOfMaterials: 4,
+    StaffAndFoodAdequacy: 5,
+    MenuDiscrepancies: 3,
+    SupervisorUpdates: 4,
+    FoodTasteAndQuality: 5,
+    KitchenHygiene: 4,
+    UtensilCleanliness: 4,
+    ServiceTimingsAdherence: 4,
+    Comments: "Inspection completed successfully",
   },
   {
-    category: "090-Home",
-    avgPrice: "$3.28",
-    lastYear: "$2,913,647",
-    thisYear: "$3,053,226",
-    goal: "$2,913,647",
-    status: "✅",
-  },
-  {
-    category: "070-Hosiery",
-    avgPrice: "$3.57",
-    lastYear: "$573,604",
-    thisYear: "$486,106",
-    goal: "$573,604",
-    status: "❌",
+    InspectionID: 2,
+    messNo: 2,
+    mrId: 2,
+    InspectionDate: "2024-12-15T22:23:27.000Z",
+    QualityAndExpiry: 3,
+    StandardsOfMaterials: 4,
+    StaffAndFoodAdequacy: 4,
+    MenuDiscrepancies: 4,
+    SupervisorUpdates: 3,
+    FoodTasteAndQuality: 4,
+    KitchenHygiene: 3,
+    UtensilCleanliness: 4,
+    ServiceTimingsAdherence: 3,
+    Comments: "Minor issues noted",
   },
 ];
 
-const ReportTable = () => {
-  return (
-    <ScrollView horizontal>
-      <View>
-        <Text style={styles.title}>View Reports</Text>
-        <DataTable style={styles.table}>
-          {/* Table Header */}
-          <DataTable.Header>
-            <DataTable.Title>Category</DataTable.Title>
-            <DataTable.Title>Avg Price</DataTable.Title>
-            <DataTable.Title>Last Year</DataTable.Title>
-            <DataTable.Title>This Year</DataTable.Title>
-            <DataTable.Title>Goal</DataTable.Title>
-            <DataTable.Title>Status</DataTable.Title>
-          </DataTable.Header>
+// Function to dynamically generate table headers
+const getHeaders = (data) => {
+  const headers = Object.keys(data[0]);
+  return headers.map((header) => ({
+    label: header.replace(/([A-Z])/g, " $1").toUpperCase(),
+    key: header,
+  }));
+};
 
-          {/* Table Rows */}
-          {data.map((item, index) => (
-            <DataTable.Row key={index}>
-              <DataTable.Cell>{item.category}</DataTable.Cell>
-              <DataTable.Cell>{item.avgPrice}</DataTable.Cell>
-              <DataTable.Cell>{item.lastYear}</DataTable.Cell>
-              <DataTable.Cell>{item.thisYear}</DataTable.Cell>
-              <DataTable.Cell>{item.goal}</DataTable.Cell>
-              <DataTable.Cell>{item.status}</DataTable.Cell>
-            </DataTable.Row>
-          ))}
-        </DataTable>
+const InspectionReports = () => {
+  const [reports, setReports] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const headers = getHeaders(inspectionData);
 
-        {/* Export Button */}
-        <Button mode="contained" onPress={() => alert("Exporting to Excel...")}>
-          Export to Excel
-        </Button>
+  useEffect(() => {
+    // Simulating API call to fetch reports
+    const fetchReports = () => {
+      setIsLoading(true);
+      setTimeout(() => {
+        setReports(inspectionData);
+        setIsLoading(false);
+      }, 1000);
+    };
+
+    fetchReports();
+  }, []);
+
+  const generateAndShareExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Inspection Reports");
+
+    // Add headers to the worksheet
+    worksheet.columns = headers.map((header) => ({
+      header: header.label,
+      key: header.key,
+      width: 25,
+    }));
+
+    // Add rows
+    reports.forEach((item) => worksheet.addRow(item));
+
+    try {
+      // Write workbook to a buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      // Define file path
+      const fileUri = FileSystem.documentDirectory + "inspection_reports.xlsx";
+
+      // Write the buffer to a file
+      await FileSystem.writeAsStringAsync(fileUri, buffer.toString("base64"), {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Share the file
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+        Alert.alert("Success", "Excel file has been shared successfully!");
+      } else {
+        Alert.alert("Error", "Sharing is not available on this device.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to generate or share the Excel file.");
+      console.error("Error: ", error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#1E88E5" />
+        <Text>Loading inspection reports...</Text>
       </View>
-    </ScrollView>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Inspection Reports</Text>
+      <ScrollView style={styles.scrollContainer}>
+        <ScrollView horizontal>
+          <DataTable>
+            <DataTable.Header style={styles.header}>
+              {headers.map((header, index) => (
+                <DataTable.Title key={index} style={styles.cellHeader}>
+                  {header.label}
+                </DataTable.Title>
+              ))}
+            </DataTable.Header>
+
+            {reports.map((item, index) => (
+              <DataTable.Row key={index} style={styles.row}>
+                {headers.map((header) => (
+                  <DataTable.Cell key={header.key} style={styles.cell}>
+                    {header.key === "InspectionDate"
+                      ? new Date(item[header.key]).toLocaleDateString()
+                      : item[header.key]}
+                  </DataTable.Cell>
+                ))}
+              </DataTable.Row>
+            ))}
+          </DataTable>
+        </ScrollView>
+      </ScrollView>
+      <Button title="Download as Excel" onPress={generateAndShareExcel} />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  title: { fontSize: 24, textAlign: "center", marginVertical: 10 },
-  table: { marginHorizontal: 10 },
+  container: { flex: 1, backgroundColor: "#E3F2FD", padding: 10 },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#1E88E5",
+    marginBottom: 10,
+  },
+  scrollContainer: { marginBottom: 10 },
+  header: { backgroundColor: "#BBDEFB" },
+  cellHeader: {
+    fontWeight: "bold",
+    color: "#1E88E5",
+    minWidth: 120,
+    textAlign: "center",
+  },
+  row: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  cell: {
+    minWidth: 120,
+    textAlign: "center",
+    paddingVertical: 10,
+  },
 });
 
-export default ReportTable;
+export default InspectionReports;

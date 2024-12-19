@@ -10,9 +10,7 @@ import {
 import { useSession } from "../../SessionContext"; // Import context
 import axios from "axios";
 
-
 const LoginPage = ({ navigation }) => {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useSession(); // Access the login function from context
@@ -32,12 +30,10 @@ const LoginPage = ({ navigation }) => {
 
   const handleLogin = async () => {
     const user = await fetchLogin();
-    if(email==='director@gmail.com' && password==='password'){
-      login('director');
-      navigation.replace('Director');
-      
-    }
-    else{
+    if (email === "director@gmail.com" && password === "password") {
+      login("director");
+      navigation.replace("Director");
+    } else {
       if (!user) {
         alert("Invalid email or password");
       } else {
@@ -51,23 +47,26 @@ const LoginPage = ({ navigation }) => {
         });
 
         // Navigate based on user role
-        
-          switch (user.role) {
-            case "student":
-              navigation.replace("StudentPage");
-              break;
-            case "mess_rep":
-              navigation.replace("MRPage");
-              break;
-            case "admin":
-              navigation.replace("Admin");
-              break;
-            case "faculty":
-              navigation.replace("Coordinator");
-              break;
-            default:
-              alert("Invalid role");
-          }
+
+        switch (user.role) {
+          case "student":
+            navigation.replace("StudentPage");
+            break;
+          case "mess_rep":
+            navigation.replace("MRPage");
+            break;
+          case "admin":
+            navigation.replace("Admin");
+            break;
+          case "faculty":
+            navigation.replace("Coordinator");
+            break;
+          case "mess_supervisor":
+            navigation.replace("Supervisor");
+            break;
+          default:
+            alert("Invalid role");
+        }
       }
     }
   };

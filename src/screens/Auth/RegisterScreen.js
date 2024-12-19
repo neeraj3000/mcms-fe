@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { registerStudent } from "../../../backend/student";
+// import registerUser from "../../../backend/authFunctions"; // Import your backend function
+
 import {
   StyleSheet,
   Text,
@@ -8,7 +11,6 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import axios from "axios";
 
 const RegisterPage = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -29,18 +31,13 @@ const RegisterPage = ({ navigation }) => {
     }
 
     try {
-      const response = await axios.post(
-        "https://mcms-nseo.onrender.com/auth/register",
-        {
-          name: name,
-          email: email,
-          password: password,
-          role: "student",
-        }
-      );
+      // Await the response from the registerStudent function which is a firebase function
+      const response = await registerStudent({
+        
+      });
 
-      if (response.status === 200) {
-        alert("Success", "Registration successful!", [
+      if (response.success) {
+        Alert.alert("Success", "Registration successful!", [
           { text: "OK", onPress: () => navigation.navigate("Login") },
         ]);
       } else {
