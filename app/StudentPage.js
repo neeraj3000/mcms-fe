@@ -25,7 +25,7 @@ const CustomDrawerContent = (props) => {
 
   const handleLogout = () => {
     Alert.alert(
-      "Confirm Logout",
+      "Logout:",
       "Are you sure you want to logout?",
       [
         {
