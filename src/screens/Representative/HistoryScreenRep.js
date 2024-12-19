@@ -15,9 +15,8 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import axios from "axios";
 import { useSession } from "../../SessionContext";
 import RefreshButton from "../../components/RefreshButton";
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; 
 
-const IssueHistory = () => {
+const IssueHistoryRep = () => {
   const [issueHistory, setIssueHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(null);
@@ -132,30 +131,7 @@ const IssueHistory = () => {
 
   const renderModalContent = () => {
     if (!selectedIssue) return null;
-  
-    const handleReraise = async () => {
-      try {
-        const response = await axios.put(
-          `https://mcms-nseo.onrender.com/complaints/issues/${selectedIssue.id}`,
-          { status: "reraised" }
-        );
-        if (response.data.success) {
-          setIssueHistory((prevIssues) =>
-            prevIssues.map((issue) =>
-              issue.id === selectedIssue.id ? { ...selectedIssue, status: "reraised" } : issue
-            )
-          );
-          closeModal();
-          Alert.alert("Success", "The issue has been reraised.");
-        } else {
-          Alert.alert("Error", "Unable to reraise the issue. Please try again later.");
-        }
-      } catch (error) {
-        console.error("Error reraising issue:", error);
-        Alert.alert("Error", "Unable to reraise the issue. Please try again later.");
-      }
-    };
-  
+
     return (
       <ScrollView contentContainerStyle={styles.modalScrollContent}>
         <View style={styles.modalHeader}>
@@ -163,15 +139,15 @@ const IssueHistory = () => {
           {selectedIssue.status !== "resolved" && (
             <View style={styles.modalActions}>
               <TouchableOpacity onPress={openEditModal}>
-                <MaterialIcons name="edit" size={24} color="grey" style={styles.icon} />
+                <Icon name="edit" size={24} color="grey" style={styles.icon} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => confirmDeleteIssue(selectedIssue.id)}>
-                <MaterialIcons name="delete" size={24} color="red" style={styles.icon} />
+                <Icon name="delete" size={24} color="red" style={styles.icon} />
               </TouchableOpacity>
             </View>
           )}
           <TouchableOpacity onPress={closeModal}>
-            <MaterialIcons name="close" size={30} color="grey" style={styles.closeIcon} />
+            <Icon name="close" size={30} color="grey" style={styles.closeIcon} />
           </TouchableOpacity>
         </View>
         <Text style={styles.modalDescription}>
@@ -180,25 +156,10 @@ const IssueHistory = () => {
         {selectedIssue.image && (
           <Image source={{ uri: selectedIssue.image.url }} style={styles.issueImage} />
         )}
-        {selectedIssue.status === "resolved" && (
-          <View style={styles.reraiseSection}>
-            <Text style={styles.reraiseText}>This issue is resolved. Would you like to reraise it?</Text>
-            <View style={styles.reraiseButtons}>
-              <TouchableOpacity onPress={handleReraise}>
-                <MaterialIcons name="check-circle" size={30} color="green" style={styles.reraiseIcon} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={closeModal}>
-                <MaterialIcons name="cancel" size={30} color="red" style={styles.reraiseIcon} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </ScrollView>
     );
   };
-  
-  
-  
+
   const renderIssueItem = (issue) => {
     return (
       <TouchableOpacity
@@ -454,27 +415,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
   },
-  reraiseSection: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  reraiseText: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: "#333",
-  },
-  reraiseButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-  },
-  reraiseIcon: {
-    marginHorizontal: 20,
-  },
-
 });
 
-export default IssueHistory;
+export default IssueHistoryRep;

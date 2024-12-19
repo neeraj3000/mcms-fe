@@ -1,8 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Image, FlatList, Animated } from 'react-native';
+import { StyleSheet, View, Text, Image, FlatList, Animated, TouchableOpacity, ScrollView } from 'react-native';
 import * as Animatable from 'react-native-animatable';
-
-const backgroundImage = require('../../../assets/images/background.png'); // Local image
 
 const StudentHomePage = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -10,12 +8,19 @@ const StudentHomePage = () => {
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 2000,
+      duration: 1500,
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
 
   const messTimetable = [
+    {
+      day: 'Sunday',
+      breakfast: '1. Chapathi\n2. Alukurma\n3. Milk',
+      lunch: '1. Veg Biryani Rice\n2. Chicken & Gutti Vankaya Curry\n3. Rytha\n4. Sambar\n5. Sweet',
+      evening_snacks: '1. Milk Biscuits (4)\n2. Tea',
+      dinner: '1. Rice\n2. Dosakaya Chutney\n3. Sambar\n4. Banana\n5. Curd',
+    },
     {
       day: 'Monday',
       breakfast: '1. Idly(4)\n2. Palli Chutney\n3. Boiled Egg\n4. Milk',
@@ -53,113 +58,139 @@ const StudentHomePage = () => {
       evening_snacks: '1. Atukulu (Chuduva)\n2. Tea',
       dinner: '1. Rice\n2. Mixed Veg Fry (Alu+Carrot+Beans)\n3. Sambar\n4. Gongura Chutney\n5. Curd',
     },
-    {
-      day: 'Sunday',
-      breakfast: '1. Chapathi\n2. Alukurma\n3. Milk',
-      lunch: '1. Veg Biryani Rice\n2. Chicken & Gutti Vankaya Curry\n3. Rytha\n4. Sambar\n5. Sweet',
-      evening_snacks: '1. Milk Biscuits (4)\n2. Tea',
-      dinner: '1. Rice\n2. Dosakaya Chutney\n3. Sambar\n4. Banana\n5. Curd',
-    },
   ];
 
-  const renderCard = ({ item }) => (
+  const today = new Date().toLocaleString('en-us', { weekday: 'long' });
+  const todayMenu = messTimetable.find(item => item.day === today);
+
+  const renderCard = (item) => (
     <Animatable.View animation="fadeInUp" style={styles.card}>
       <Text style={styles.cardTitle}>{item.day}</Text>
-      <Text style={styles.cardMealTitle}>Breakfast:</Text>
-      <Text style={styles.cardMeal}>{item.breakfast}</Text>
-      <Text style={styles.cardMealTitle}>Lunch:</Text>
-      <Text style={styles.cardMeal}>{item.lunch}</Text>
-      <Text style={styles.cardMealTitle}>Dinner:</Text>
-      <Text style={styles.cardMeal}>{item.dinner}</Text>
+      <View style={styles.mealSection}>
+        <Text style={styles.cardMealTitle}>Breakfast:</Text>
+        <Text style={styles.cardMeal}>{item.breakfast}</Text>
+      </View>
+      <View style={styles.mealSection}>
+        <Text style={styles.cardMealTitle}>Lunch:</Text>
+        <Text style={styles.cardMeal}>{item.lunch}</Text>
+      </View>
+      <View style={styles.mealSection}>
+        <Text style={styles.cardMealTitle}>Dinner:</Text>
+        <Text style={styles.cardMeal}>{item.dinner}</Text>
+      </View>
     </Animatable.View>
   );
 
   return (
-    <FlatList
-      data={messTimetable}
-      renderItem={renderCard}
-      keyExtractor={(item) => item.day}
-      contentContainerStyle={styles.container}
-      ListHeaderComponent={
-        <>
-          <View style={styles.logoContainer}>
-            <View style={styles.logo}>
-              <Image source={require('../../../assets/images/rgulogo2.png')} style={styles.logoImage} />
-            </View>
-          </View>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Image
+          source={require('../../../assets/images/rgulogo2.png')}
+          style={styles.logo}
+        />
+        <Text style={styles.headerText}>Today's Menu</Text>
+      </View>
 
-          <Text style={styles.tableHeader}>Mess Timetable</Text>
-        </>
-      }
-    />
+      <View style={styles.cardContainer}>
+        {todayMenu ? (
+          renderCard(todayMenu)
+        ) : (
+          <Text style={styles.noMenuText}>No menu available for today.</Text>
+        )}
+      </View>
+
+      <View style={styles.quoteContainer}>
+        <Text style={styles.quoteText}>
+          "A good meal can change the course of your day."
+        </Text>
+        <Text style={styles.quoteText}>
+          "Food is the ingredient that binds us together."
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#e3f2fd',
+    flex: 1,
+    backgroundColor: '#e1f5fe',
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
-  logoContainer: {
-    position: 'absolute', // Position the logo in the top-left
-    top: -13, // Distance from the top
-    left: 5, // Distance from the left
-    width: 50, // Reduced width
-    height: 50, // Reduced height
-    backgroundColor: '#2196f3',
-    borderRadius: 35, // Half of width/height for circular shape
-    justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    zIndex: 1, // Ensure the logo is above other content
+    justifyContent: 'center',
+    marginBottom: 20,
+    backgroundColor: '#0288d1',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
   },
   logo: {
-    top: 3,
-    width: 50, // Adjusted inner logo width
-    height: 50, // Adjusted inner logo height
-    alignItems: 'center',
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 15,
   },
-  logoImage: {
-    width: 45, // Adjusted logo image size
-    height: 45,
-    borderRadius: 25,
-  },
-
-  tableHeader: {
-    fontSize: 20,
+  headerText: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#0d47a1',
-    textAlign: 'center',
+    color: '#ffffff',
+  },
+  cardContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
     padding: 15,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#2196f3',
-    marginBottom: 5,
+    color: '#0277bd',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  mealSection: {
+    marginBottom: 15,
   },
   cardMealTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#000000',
+    marginBottom: 5,
   },
   cardMeal: {
     fontSize: 14,
-    color: '#333',
+    color: '#000000',
+  },
+  noMenuText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  quoteContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#fff3e0',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  quoteText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: '#5d4037',
+    textAlign: 'center',
     marginBottom: 10,
   },
 });
