@@ -14,14 +14,23 @@ import bcrypt from "bcryptjs"; // Import bcrypt
 
 // Register Student and User
 export const registerStudent = async (
-  name = "ram",
-  collegeId = "r200000",
-  mobileNo = 6303030303,
-  gender = "male",
-  batch = "r20",
-  email = "ram@gmail.com",
-  password = "1234567890"
+  name,
+  collegeId,
+  mobileNo,
+  gender,
+  batch,
+  email,
+  password
 ) => {
+  console.log("Studen", {
+    name,
+    collegeId,
+    mobileNo,
+    gender,
+    batch,
+    email,
+    password,
+  });
   try {
     // Check for missing fields
     if (
@@ -38,11 +47,14 @@ export const registerStudent = async (
 
     // Firestore collection references
     const usersRef = collection(firestore, "users");
-    const studentsRef = collection(firestore, "student");
+    const studentsRef = collection(firestore, "Student");
 
-    const lastUser = await usersRef.orderBy("userId", "desc").limit(1).get();
-    const newUserId = lastUser.empty ? 1 : lastUser.docs[0].data().userId + 1;
+    const usersQuery = query(usersRef, orderBy("userId", "desc"), limit(1));
+    const lastUserSnapshot = await getDocs(usersQuery);
 
+    const newUserId = lastUserSnapshot.empty
+      ? 1
+      : lastUserSnapshot.docs[0].data().userId + 1;
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -88,9 +100,11 @@ export const registerStudent = async (
 export const getUserByCollegeId = async (collegeId) => {
   try {
     const studentsRef = collection(firestore, "Student");
-    const snapshot = await studentsRef
-      .where("collegeId", "==", collegeId)
-      .get();
+    const studentQuery = query(
+      studentsRef,
+      where("collegeId", "==", collegeId)
+    );
+    const snapshot = await getDocs(studentQuery);
 
     if (snapshot.empty) {
       throw new Error("Student not found");
@@ -108,7 +122,7 @@ export const getUserByCollegeId = async (collegeId) => {
 export const getAllUsers = async () => {
   try {
     const usersRef = collection(firestore, "users");
-    const snapshot = await usersRef.get();
+    const snapshot = await getDocs(usersRef);
 
     if (snapshot.empty) {
       throw new Error("No users found");
