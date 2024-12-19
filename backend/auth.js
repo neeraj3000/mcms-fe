@@ -1,19 +1,35 @@
-const bcrypt = require("bcryptjs");// For password hashing and comparison
-import { firestore } from "./firebase"; // Import Firestore
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from "firebase/firestore";
+import { compare } from "bcryptjs"; // For password hashing and comparison
+import { app } from "./firebase"; // Import initialized Firebase app
+
+// Initialize Firestore
+const firestore = getFirestore(app);
 
 // Login function
-export async function login({ email, password }) {
+export async function loginUser({ email, password }) {
   try {
     // Check if both email and password are provided
     if (!email || !password) {
       return { success: false, message: "Email and password are required." };
     }
 
-    // Fetch user document from Firestore using email
-    const usersRef = firestore.collection("users");
-    const snapshot = await usersRef.where("email", "==", email).limit(1).get();
+    // Create a reference to the 'users' collection
+    const usersRef = collection(firestore, "users");
 
-    // If user not found, return error message
+    // Create a query to find the user document with the matching email
+    const userQuery = query(usersRef, where("email", "==", email), limit(1));
+
+    // Execute the query
+    const snapshot = await getDocs(userQuery);
+
+    // If user not found, return an error message
     if (snapshot.empty) {
       return { success: false, message: "User not found." };
     }
@@ -23,9 +39,9 @@ export async function login({ email, password }) {
     const userData = userDoc.data();
 
     // Compare provided password with the hashed password stored in Firestore
-    const isPasswordValid = await bcrypt.compare(password, userData.password);
+    const isPasswordValid = await compare(password, userData.password);
 
-    // If password is invalid, return error message
+    // If password is invalid, return an error message
     if (!isPasswordValid) {
       return { success: false, message: "Invalid password." };
     }

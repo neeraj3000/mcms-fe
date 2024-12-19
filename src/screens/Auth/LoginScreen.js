@@ -8,7 +8,7 @@ import {
   Image,
 } from "react-native";
 import { useSession } from "../../SessionContext"; // Import context
-import axios from "axios";
+import { loginUser } from "../../../backend/auth";
 
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -16,12 +16,12 @@ const LoginPage = ({ navigation }) => {
   const { login } = useSession(); // Access the login function from context
   const fetchLogin = async () => {
     try {
-      const response = await axios.post(
-        "https://mcms-nseo.onrender.com/auth/login",
-        { email, password },
-        { timeout: 7000 }
-      );
-      return response.data.user;
+      const response = await loginUser({ email, password });
+      if (response.success) {
+        return response.user;
+      } else {
+        return null;
+      }
     } catch (error) {
       console.error("Login failed:", error);
       return null;

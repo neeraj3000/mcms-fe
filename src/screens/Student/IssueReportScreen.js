@@ -13,12 +13,13 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useSession } from "../../SessionContext";
-import axios from "axios";
+import { createIssue } from "../../../backend/issues"; // Import the Firebase function
 
 const ReportIssue = () => {
   const { user } = useSession(); // Access session data
   const [issueType, setIssueType] = useState("");
   const [description, setDescription] = useState("");
+  const [messNo, setMessNo] = useState("");
   const [image, setImage] = useState(null);
 
   useEffect(() => {
@@ -29,9 +30,13 @@ const ReportIssue = () => {
 
   const handleImageUpload = useCallback(async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permission.status !== "granted") {
-        return Alert.alert("Permission Denied", "Media library access is required.");
+        return Alert.alert(
+          "Permission Denied",
+          "Media library access is required."
+        );
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -55,40 +60,34 @@ const ReportIssue = () => {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!issueType || !description) {
+    if (!issueType || !description || !messNo) {
       return Alert.alert("Error", "Please fill in all the fields.");
     }
 
     try {
-      const formData = new FormData();
-      formData.append("description", description);
-      formData.append("category", issueType);
-      formData.append("userId", user?.id);
-      if (image) {
-        formData.append("image", {
-          uri: image,
-          name: "uploaded_image.jpg",
-          type: "image/jpeg",
-        });
+      const issueData = {
+        title: issueType,
+        description,
+        messNo: parseInt(messNo, 10),
+        image,
+        userId: user?.id,
+      };
+
+      const response = await createIssue(issueData); // Call Firebase function
+      if (response.success) {
+        Alert.alert("Success", "Your issue has been reported.");
+        setIssueType("");
+        setDescription("");
+        setMessNo("");
+        setImage(null);
+      } else {
+        throw new Error(response.message);
       }
-
-      const response = await axios.post(
-        "https://mcms-nseo.onrender.com/student/issues",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
-      Alert.alert("Success", "Your issue has been reported.");
-      setIssueType("");
-      setDescription("");
-      setImage(null);
     } catch (error) {
       Alert.alert("Error", "Failed to report the issue.");
       console.error(error);
     }
-  }, [issueType, description, image, user]);
+  }, [issueType, description, messNo, image, user]);
 
   return (
     <View style={styles.container}>
@@ -113,6 +112,17 @@ const ReportIssue = () => {
           onChangeText={setDescription}
           value={description}
           placeholder="Describe the issue"
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Mess Number</Text>
+        <TextInput
+          style={styles.input}
+          onChangeText={setMessNo}
+          value={messNo}
+          placeholder="Enter mess number"
+          keyboardType="numeric"
         />
       </View>
 
