@@ -23,7 +23,7 @@ export const registerStudent = async (
   email,
   password
 ) => {
-  console.log("Student", {
+  console.log("Studen", {
     name,
     collegeId,
     mobileNo,
@@ -50,22 +50,12 @@ export const registerStudent = async (
     const usersRef = collection(firestore, "users");
     const studentsRef = collection(firestore, "Student");
 
-    // Check if email already exists
-    const emailQuery = query(usersRef, where("email", "==", email));
-    const emailSnapshot = await getDocs(emailQuery);
-
-    if (!emailSnapshot.empty) {
-      alert("User all ready exists");
-      throw new Error("User already exists with this email");
-    }
-
     const usersQuery = query(usersRef, orderBy("userId", "desc"), limit(1));
     const lastUserSnapshot = await getDocs(usersQuery);
 
     const newUserId = lastUserSnapshot.empty
       ? 1
       : lastUserSnapshot.docs[0].data().userId + 1;
-
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
