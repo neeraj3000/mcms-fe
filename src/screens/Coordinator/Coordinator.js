@@ -1,17 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import FeedbackScreen from "./ViewFeedBack";
-import Reports from "./Reports";
+import Analytics from "./Analytics";
 
 const CoordinatorHome = () => {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Welcome, Coordinator</Text>
-      <View>
-        <Reports />
-      </View>
-    </View>
-  );
+  return <Analytics />;
 };
 
 const styles = StyleSheet.create({

@@ -1,255 +1,170 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
-import { PieChart, BarChart } from "react-native-chart-kit";
-import { Button, Menu, Provider } from "react-native-paper";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+} from "react-native";
+import { DataTable } from "react-native-paper";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import ExcelJS from "exceljs";
 
-const screenWidth = Dimensions.get("window").width;
-
-const categories = [
-  "TimelinessOfService",
-  "CleanlinessOfDiningHall",
-  "FoodQuality",
-  "QuantityOfFood",
-  "CourtesyOfStaff",
-  "StaffHygiene",
-  "MenuAdherence",
-  "WashAreaCleanliness",
-  "Comments",
+// Sample feedback data
+const feedbackData = [
+  {
+    FeedbackID: 1,
+    UserID: 101,
+    FeedbackDate: "2024-12-10T18:45:00.000Z",
+    Rating: 4,
+    Comments: "Great experience!",
+  },
+  {
+    FeedbackID: 2,
+    UserID: 102,
+    FeedbackDate: "2024-12-12T14:30:00.000Z",
+    Rating: 3,
+    Comments: "Service could be improved.",
+  },
 ];
 
-const FeedbackScreen = () => {
-  const [selectedCategory, setSelectedCategory] = useState("FoodQuality");
-  const [feedbackData, setFeedbackData] = useState({
-    messFeedback: [],
-    timeFeedback: [],
-  });
+// Function to dynamically generate table headers
+const getHeaders = (data) => {
+  const headers = Object.keys(data[0]);
+  return headers.map((header) => ({
+    label: header.replace(/([A-Z])/g, " $1").toUpperCase(),
+    key: header,
+  }));
+};
 
-  const [menuVisible, setMenuVisible] = useState(false);
+const FeedbackScreen = () => {
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const headers = getHeaders(feedbackData);
 
   useEffect(() => {
-    // Simulated backend data fetch
-    const fetchData = async () => {
-      const data = {
-        messFeedback: [
-          { name: "Mess A", FoodQuality: 80, StaffHygiene: 70 },
-          { name: "Mess B", FoodQuality: 60, StaffHygiene: 85 },
-          { name: "Mess C", FoodQuality: 90, StaffHygiene: 75 },
-        ],
-        timeFeedback: [
-          { label: "Jun-Jul", FoodQuality: 70, StaffHygiene: 60 },
-          { label: "Jul-Aug", FoodQuality: 80, StaffHygiene: 70 },
-        ],
-      };
-      setFeedbackData(data);
+    // Simulate API call to fetch feedback
+    const fetchFeedbacks = () => {
+      setIsLoading(true);
+      setTimeout(() => {
+        setFeedbacks(feedbackData);
+        setIsLoading(false);
+      }, 1000);
     };
 
-    fetchData();
+    fetchFeedbacks();
   }, []);
 
-  // Prepare Pie Chart Data for Mess Feedback
-  const pieDataMess = feedbackData.messFeedback.map((item, index) => ({
-    name: item.name,
-    population: item[selectedCategory] || 0,
-    color: ["#007BFF", "#28A745", "#FFC107"][index],
-    legendFontColor: "#000",
-    legendFontSize: 12,
-  }));
+  const generateAndShareExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Feedback Data");
 
-  // Prepare Pie Chart Data for Time Feedback
-  const pieDataTime = feedbackData.timeFeedback.map((item, index) => ({
-    name: item.label,
-    population: item[selectedCategory] || 0,
-    color: ["#007BFF", "#28A745", "#FFC107", "#DC3545"][index],
-    legendFontColor: "#000",
-    legendFontSize: 12,
-  }));
+    // Add headers to the worksheet
+    worksheet.columns = headers.map((header) => ({
+      header: header.label,
+      key: header.key,
+      width: 25,
+    }));
 
-  // Prepare Bar Chart Data for Mess Feedback
-  const barDataMess = {
-    labels: feedbackData.messFeedback.map((item) => item.name),
-    datasets: [
-      {
-        data: feedbackData.messFeedback.map(
-          (item) => item[selectedCategory] || 0
-        ),
-      },
-    ],
+    // Add rows
+    feedbacks.forEach((item) => worksheet.addRow(item));
+
+    try {
+      // Write workbook to a buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      // Define file path
+      const fileUri = FileSystem.documentDirectory + "feedback_data.xlsx";
+
+      // Write the buffer to a file
+      await FileSystem.writeAsStringAsync(fileUri, buffer.toString("base64"), {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Share the file
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+        Alert.alert("Success", "Excel file has been shared successfully!");
+      } else {
+        Alert.alert("Error", "Sharing is not available on this device.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to generate or share the Excel file.");
+      console.error("Error: ", error);
+    }
   };
 
-  // Prepare Bar Chart Data for Time Feedback
-  const barDataTime = {
-    labels: feedbackData.timeFeedback.map((item) => item.label),
-    datasets: [
-      {
-        data: feedbackData.timeFeedback.map(
-          (item) => item[selectedCategory] || 0
-        ),
-      },
-    ],
-  };
-
-  // Tab Routes
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: "mess", title: "Feedback by Mess" },
-    { key: "time", title: "Feedback by Time Period" },
-  ]);
-
-  // Tab Scenes
-  const renderScene = SceneMap({
-    mess: () => (
-      <ScrollView>
-        {/* Pie Chart for Feedback by Mess */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} by Mess (Pie Chart)
-        </Text>
-        <PieChart
-          data={pieDataMess}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor={"population"}
-          backgroundColor={"transparent"}
-          paddingLeft={"15"}
-          absolute
-        />
-
-        {/* Bar Chart for Feedback by Mess */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} by Mess (Bar Chart)
-        </Text>
-        <BarChart
-          data={barDataMess}
-          width={screenWidth - 32}
-          height={220}
-          yAxisLabel=""
-          chartConfig={chartConfig}
-          verticalLabelRotation={30}
-        />
-      </ScrollView>
-    ),
-    time: () => (
-      <ScrollView>
-        {/* Pie Chart for Feedback Over Time */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} Over Time (Pie Chart)
-        </Text>
-        <PieChart
-          data={pieDataTime}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor={"population"}
-          backgroundColor={"transparent"}
-          paddingLeft={"15"}
-          absolute
-        />
-
-        {/* Bar Chart for Feedback Over Time */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} Over Time (Bar Chart)
-        </Text>
-        <BarChart
-          data={barDataTime}
-          width={screenWidth - 32}
-          height={220}
-          yAxisLabel=""
-          chartConfig={chartConfig}
-          verticalLabelRotation={30}
-        />
-      </ScrollView>
-    ),
-  });
+  if (isLoading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#1E88E5" />
+        <Text>Loading feedbacks...</Text>
+      </View>
+    );
+  }
 
   return (
-    <Provider>
-      <View style={styles.container}>
-        <Text style={styles.title}>Mess Feedback Dashboard</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Feedback Data</Text>
+      <ScrollView style={styles.scrollContainer}>
+        <ScrollView horizontal>
+          <DataTable>
+            <DataTable.Header style={styles.header}>
+              {headers.map((header, index) => (
+                <DataTable.Title key={index} style={styles.cellHeader}>
+                  {header.label}
+                </DataTable.Title>
+              ))}
+            </DataTable.Header>
 
-        {/* Category Filter */}
-        <View style={styles.filterContainer}>
-          <Text style={styles.label}>Select Category: </Text>
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <Button mode="outlined" onPress={() => setMenuVisible(true)}>
-                {selectedCategory}
-              </Button>
-            }
-          >
-            {categories.map((category) => (
-              <Menu.Item
-                key={category}
-                title={category}
-                onPress={() => {
-                  setSelectedCategory(category);
-                  setMenuVisible(false);
-                }}
-              />
+            {feedbacks.map((item, index) => (
+              <DataTable.Row key={index} style={styles.row}>
+                {headers.map((header) => (
+                  <DataTable.Cell key={header.key} style={styles.cell}>
+                    {header.key === "FeedbackDate"
+                      ? new Date(item[header.key]).toLocaleDateString()
+                      : item[header.key]}
+                  </DataTable.Cell>
+                ))}
+              </DataTable.Row>
             ))}
-          </Menu>
-        </View>
-
-        {/* Tabs */}
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: screenWidth }}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              indicatorStyle={{ backgroundColor: "blue" }}
-              style={{ backgroundColor: "blue" }}
-              labelStyle={{ color: "blue" }}
-            />
-          )}
-        />
-      </View>
-    </Provider>
+          </DataTable>
+        </ScrollView>
+      </ScrollView>
+      <Button title="Download as Excel" onPress={generateAndShareExcel} />
+    </View>
   );
 };
 
-const chartConfig = {
-  backgroundGradientFrom: "#ffffff",
-  backgroundGradientTo: "#ffffff",
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  style: {
-    borderRadius: 16,
-  },
-};
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f4f4f4",
-    paddingTop: 16,
-  },
+  container: { flex: 1, backgroundColor: "#E3F2FD", padding: 10 },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 16,
+    color: "#1E88E5",
+    marginBottom: 10,
   },
-  filterContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 8,
-  },
-  label: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  chartTitle: {
-    fontSize: 18,
+  scrollContainer: { marginBottom: 10 },
+  header: { backgroundColor: "#BBDEFB" },
+  cellHeader: {
     fontWeight: "bold",
+    color: "#1E88E5",
+    minWidth: 120,
     textAlign: "center",
-    marginVertical: 12,
+  },
+  row: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  cell: {
+    minWidth: 120,
+    textAlign: "center",
+    paddingVertical: 10,
   },
 });
 
