@@ -37,7 +37,7 @@ const LoginPage = ({ navigation }) => {
       if (!user) {
         alert("Invalid email or password");
       } else {
-        alert(user.userId);
+        // alert(user.userId);
         // Save the session details using login function
         login({
           email: user.email,
@@ -45,6 +45,18 @@ const LoginPage = ({ navigation }) => {
           name: user.name,
           id: user.userId, // This is where you store the userId
         });
+        await registerForPushNotificationsAsync(user.userId, user.role);
+        const { sendNotificationToUser } = require("./pushNotifications");
+        // Replace with the actual user ID
+        const message = "Hello, this is a personalized notification!";
+
+        sendNotificationToUser(user.userId, message)
+          .then(() => {
+            console.log("Notification sent successfully!");
+          })
+          .catch((error) => {
+            console.error("Error sending notification:", error);
+          });
 
         // Navigate based on user role
 
