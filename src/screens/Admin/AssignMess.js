@@ -1,31 +1,66 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { assignMess, getAllMess } from "../../../backend/messnew"; // Assuming assignMess and getAllMess are imported from an API file
 
 const AssignMess = () => {
-  const [mess, setMess] = useState('');
-  const [batch, setBatch] = useState('');
-  const [assignedMess, setAssignedMess] = useState([]); // To store assigned messes
-  const [assignedBatch, setAssignedBatch] = useState([]); // To store assigned batches
+  const [mess, setMess] = useState("");
+  const [batch, setBatch] = useState("");
+  const [gender, setGender] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [messOptions, setMessOptions] = useState([]);
 
-  const handleAssign = () => {
-    if (!mess || !batch) {
-      Alert.alert('Error', 'Please select both Mess and Batch!');
+  useEffect(() => {
+    const fetchMessOptions = async () => {
+      setLoading(true);
+      try {
+        const response = await getAllMess();
+        console.log(response);
+        if (response.success) {
+          setMessOptions(response.messList);
+        } else {
+          Alert.alert("Error", response.message);
+        }
+      } catch (error) {
+        Alert.alert("Error", "Failed to fetch mess options.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessOptions();
+  }, []);
+
+  const handleAssign = async () => {
+    if (!mess || !batch || !gender) {
+      Alert.alert("Error", "Please select Mess, Batch, and Gender!");
       return;
     }
 
-    
-    if (assignedBatch.includes(batch)) {
-      Alert.alert('Already Assigned', `Batch ${batch} already has an assigned mess.`);
-      return;
-    }
+    setLoading(true);
+    try {
+      const response = await assignMess(mess, [batch], gender);
 
-    // Assign mess and batch
-    setAssignedMess((prevMesses) => [...prevMesses, mess]);
-    setAssignedBatch((prevBatches) => [...prevBatches, batch]);
-    Alert.alert('Success', `Mess ${mess} assigned to Batch ${batch} successfully!`);
-    setMess(''); // Reset mess selection
-    setBatch(''); // Reset batch selection
+      if (response.success) {
+        Alert.alert("Success", response.message);
+        setMess("");
+        setBatch("");
+        setGender("");
+      } else {
+        Alert.alert("Error", response.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,14 +76,13 @@ const AssignMess = () => {
           style={styles.picker}
         >
           <Picker.Item label="Select Mess" value="" />
-          <Picker.Item label="Mess 1" value="Mess1" />
-          <Picker.Item label="Mess 2" value="Mess2" />
-          <Picker.Item label="Mess 3" value="Mess3" />
-          <Picker.Item label="Mess 4" value="Mess4" />
-          <Picker.Item label="Mess 5" value="Mess5" />
-          <Picker.Item label="Mess 6" value="Mess6" />
-          <Picker.Item label="Mess 7" value="Mess7" />
-          <Picker.Item label="Mess 8" value="Mess8" />
+          {messOptions.map((option) => (
+            <Picker.Item
+              key={option.messId}
+              label={option.name}
+              value={option.messId}
+            />
+          ))}
         </Picker>
       </View>
 
@@ -70,9 +104,31 @@ const AssignMess = () => {
         </Picker>
       </View>
 
+      {/* Gender Dropdown */}
+      <Text style={styles.label}>Select Gender:</Text>
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={gender}
+          onValueChange={(itemValue) => setGender(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="Select Gender" value="" />
+          <Picker.Item label="Male" value="Male" />
+          <Picker.Item label="Female" value="Female" />
+        </Picker>
+      </View>
+
       {/* Assign Mess Button */}
-      <TouchableOpacity style={styles.button} onPress={handleAssign}>
-        <Text style={styles.buttonText}>Assign Mess</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleAssign}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#ffffff" />
+        ) : (
+          <Text style={styles.buttonText}>Assign Mess</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -82,43 +138,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#e0f7fa',
+    backgroundColor: "#f5f5f5",
   },
   heading: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#00796b',
-    textAlign: 'center',
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    textAlign: "center",
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    color: '#004d40',
+    color: "#333",
     marginVertical: 10,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#004d40',
+    borderColor: "#ccc",
     borderRadius: 5,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#fff",
     marginBottom: 20,
   },
   picker: {
     height: 50,
-    width: '100%',
-    color: '#00796b',
+    width: "100%",
   },
   button: {
-    backgroundColor: '#00796b',
+    backgroundColor: "#4CAF50",
     padding: 15,
     borderRadius: 5,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   buttonText: {
-    color: '#ffffff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

@@ -7,79 +7,75 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
-import { useSession } from "../../SessionContext"; 
-import { Picker } from "@react-native-picker/picker"; // Updated Picker import
-// Import the session context
+import { Picker } from "@react-native-picker/picker";
+import { registerAuthority } from "../../../backend/authoritynew";
+import { registerCoordinator } from "../../../backend/coordinatornew";
+import { createRepresentative } from "../../../backend/representativesnew";
+import { registerSupervisor } from "../../../backend/supervisornew"; // Update with the correct path
 
-const Admin = ({ navigation }) => {
-  const { user, logout } = useSession(); // Access session data and logout function
+const Admin = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
+  const [mobileNo, setMobileNo] = useState("");
   const [mess, setMess] = useState("");
 
- 
-  const handleRegister = () => {
-    if (!name || !email || !password || !role || (role === "Mess Representative" && !mess)) {
-      Alert.alert("Error", "Please fill in all the fields.");
+  const handleRegister = async () => {
+    if (
+      !email ||
+      (role !== "Mess Representative" && (!name || !password || !mobileNo)) ||
+      (role === "Mess Representative" && !mess)
+    ) {
+      Alert.alert("Error", "Please fill in all the required fields.");
       return;
     }
 
-    const userData = {
-      name,
-      email,
-      password,
-      role,
-      mess: role === "Mess Representative" ? mess : null,
-    };
+    try {
+      let response;
 
-    console.log("User Registered: ", userData);
-    Alert.alert("Success", "User registered successfully!");
-    // Reset the form
-    setName("");
-    setEmail("");
-    setPassword("");
-    setRole("");
-    setMess("");
+      switch (role) {
+        case "Authority":
+          response = await registerAuthority({
+            name,
+            mobileNo,
+            email,
+            password,
+          });
+          break;
+        case "Coordinator":
+          response = await registerCoordinator(name, mobileNo, email, password);
+          break;
+        case "Supervisor":
+          response = await registerSupervisor(name, mobileNo, email, password);
+          break;
+        case "Mess Representative":
+          response = await createRepresentative(email, mess);
+          break;
+        default:
+          Alert.alert("Error", "Invalid role selected.");
+          return;
+      }
+
+      if (response?.success) {
+        Alert.alert("Success", response.message);
+        setName("");
+        setEmail("");
+        setPassword("");
+        setMobileNo("");
+        setRole("");
+        setMess("");
+      } else {
+        Alert.alert("Error", response?.error || "Registration failed.");
+      }
+    } catch (err) {
+      Alert.alert("Error", err.message || "An unexpected error occurred.");
+    }
   };
-
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Add User</Text>
-        
-      </View>
-
-      {/* Name Input */}
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-        placeholder="Enter Name"
-      />
-
-      {/* Email Input */}
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Enter Email"
-        keyboardType="email-address"
-      />
-
-      {/* Password Input */}
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Enter Password"
-        secureTextEntry={true}
-      />
+      <Text style={styles.title}>User Registration</Text>
 
       {/* Role Dropdown */}
       <Text style={styles.label}>Role</Text>
@@ -89,16 +85,69 @@ const Admin = ({ navigation }) => {
           onValueChange={(itemValue) => setRole(itemValue)}
         >
           <Picker.Item label="Select Role" value="" />
-          <Picker.Item label="Mess Representative" value="Mess Representative" />
+          <Picker.Item label="Authority" value="Authority" />
           <Picker.Item label="Coordinator" value="Coordinator" />
           <Picker.Item label="Supervisor" value="Supervisor" />
+          <Picker.Item
+            label="Mess Representative"
+            value="Mess Representative"
+          />
         </Picker>
       </View>
 
-      {/* Mess Dropdown (Visible Only for Mess Representative) */}
+      {/* Input Fields for Authority, Coordinator, Supervisor */}
+      {role && role !== "Mess Representative" && (
+        <>
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Enter Name"
+          />
+
+          <Text style={styles.label}>Mobile Number</Text>
+          <TextInput
+            style={styles.input}
+            value={mobileNo}
+            onChangeText={setMobileNo}
+            placeholder="Enter Mobile Number"
+            keyboardType="numeric"
+          />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Enter Email"
+            keyboardType="email-address"
+          />
+
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter Password"
+            secureTextEntry={true}
+          />
+        </>
+      )}
+
+      {/* Input Fields for Mess Representative */}
       {role === "Mess Representative" && (
         <>
-          <Text style={styles.label}>Mess</Text>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Enter Email"
+            keyboardType="email-address"
+          />
+
+          <Text style={styles.label}>Mess Number</Text>
           <View style={styles.dropdown}>
             <Picker
               selectedValue={mess}
@@ -106,7 +155,11 @@ const Admin = ({ navigation }) => {
             >
               <Picker.Item label="Select Mess" value="" />
               {Array.from({ length: 8 }, (_, i) => (
-                <Picker.Item key={i} label={`Mess ${i + 1}`} value={`Mess ${i + 1}`} />
+                <Picker.Item
+                  key={i}
+                  label={`Mess ${i + 1}`}
+                  value={`${i + 1}`}
+                />
               ))}
             </Picker>
           </View>
@@ -124,28 +177,14 @@ const Admin = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
     padding: 20,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
+    backgroundColor: "#f9f9f9",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-  },
-  logoutButton: {
-    backgroundColor: "#FF6347",
-    padding: 10,
-    borderRadius: 5,
-  },
-  logoutButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
   },
   label: {
     fontSize: 16,
@@ -154,7 +193,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 5,
+    borderRadius: 8,
     padding: 10,
     marginBottom: 15,
     backgroundColor: "#fff",
@@ -162,35 +201,17 @@ const styles = StyleSheet.create({
   dropdown: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 5,
+    borderRadius: 8,
     marginBottom: 15,
     backgroundColor: "#fff",
   },
   registerButton: {
-    backgroundColor: "#28A745",
+    backgroundColor: "#007BFF",
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: "center",
   },
   registerButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "red",
-    textAlign: "center",
-    marginTop: 50,
-  },
-  loginButton: {
-    backgroundColor: "#007BFF",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  loginButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",

@@ -1,142 +1,206 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, FlatList, Alert } from "react-native";
+import { Button, Card, TextInput as PaperTextInput } from "react-native-paper";
+import { Provider as PaperProvider } from "react-native-paper";
+import {
+  getUserByCollegeId,
+  updateStudentProfileByCollegeId,
+  deleteUserByCollegeId,
+} from "../../../backend/studentnew"; // Adjust the path as needed
 
 const ViewStudents = () => {
-  const [selectedMess, setSelectedMess] = useState(null);
+  const [collegeId, setCollegeId] = useState("");
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
 
-  const backendURL = "https://your-backend-url/render/api"; // Replace with your backend URL
-
-  const fetchStudents = async (mess) => {
-    setLoading(true);
-    setStudents([]);
-    setSelectedMess(mess);
-
+  const fetchStudents = async () => {
     try {
-      const response = await fetch(`${backendURL}/students?mess=${mess}`);
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data); // Assuming the API returns an array of student objects
+      setLoading(true);
+      const response = await getUserByCollegeId(collegeId);
+      if (response.success) {
+        setStudents([response.user]);
       } else {
-        console.error("Failed to fetch students:", response.status);
+        Alert.alert("Error", "No students found for this College ID.");
       }
     } catch (error) {
-      console.error("Error fetching students:", error);
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEdit = (student) => {
+    setEditData(student); // Set selected student for editing
+    setIsEditing(true); // Show the edit form
+  };
+
+  const saveEdit = async () => {
+    try {
+      const { name, mobileNo, gender, batch, messId } = editData;
+      const response = await updateStudentProfileByCollegeId(collegeId, {
+        name,
+        mobileNo,
+        gender,
+        batch,
+        messId,
+      });
+      if (response.success) {
+        Alert.alert("Success", response.message);
+        fetchStudents(); // Refresh the list
+      } else {
+        Alert.alert("Error", response.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const response = await deleteUserByCollegeId(collegeId);
+      if (response.success) {
+        Alert.alert("Success", response.message);
+        setStudents([]);
+      } else {
+        Alert.alert("Error", response.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>View Students</Text>
-
-      <View style={styles.messContainer}>
-        {Array.from({ length: 8 }, (_, i) => `mess${i + 1}`).map((mess) => (
-          <TouchableOpacity
-            key={mess}
-            style={styles.messBlock}
-            onPress={() => fetchStudents(mess)}
-          >
-            <Text style={styles.messText}>{mess.toUpperCase()}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.studentsContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#1E7C2F" />
-        ) : (
-          <>
-            {selectedMess && (
-              <Text style={styles.selectedMessText}>
-                Students in {selectedMess.toUpperCase()}
-              </Text>
-            )}
-            {students.length > 0 ? (
-              students.map((student, index) => (
-                <View key={index} style={styles.studentCard}>
-                  <Text style={styles.studentText}>
-                    Name: {student.name}
-                  </Text>
-                  <Text style={styles.studentText}>
-                    Email: {student.email}
-                  </Text>
-                  <Text style={styles.studentText}>
-                    Role: {student.role}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              selectedMess && !loading && (
-                <Text style={styles.noDataText}>No students found.</Text>
-              )
-            )}
-          </>
+    <PaperProvider>
+      <View style={styles.container}>
+        <Text style={styles.title}>Student Management</Text>
+        <PaperTextInput
+          mode="outlined"
+          label="Enter College ID"
+          value={collegeId}
+          onChangeText={setCollegeId}
+          style={styles.input}
+        />
+        <Button
+          mode="contained"
+          onPress={fetchStudents}
+          loading={loading}
+          disabled={loading}
+        >
+          View Students
+        </Button>
+        <FlatList
+          data={students}
+          keyExtractor={(item, index) => `${item.collegeId}-${index}`}
+          renderItem={({ item }) => (
+            <Card style={styles.studentCard}>
+              <Card.Title title={item.name} subtitle={`Batch: ${item.batch}`} />
+              <Card.Content>
+                <Text>Mobile No: {item.mobileNo}</Text>
+                <Text>Gender: {item.gender}</Text>
+              </Card.Content>
+              <Card.Actions>
+                <Button onPress={() => handleEdit(item)}>Edit</Button>
+                <Button onPress={handleDelete} color="red">
+                  Delete
+                </Button>
+              </Card.Actions>
+            </Card>
+          )}
+        />
+        {isEditing && (
+          <View style={styles.editForm}>
+            <Text style={styles.subtitle}>Edit Student Details</Text>
+            <PaperTextInput
+              mode="outlined"
+              label="Name"
+              value={editData.name}
+              onChangeText={(text) =>
+                setEditData((prev) => ({ ...prev, name: text }))
+              }
+              style={styles.input}
+            />
+            <PaperTextInput
+              mode="outlined"
+              label="Mobile No"
+              value={editData.mobileNo}
+              onChangeText={(text) =>
+                setEditData((prev) => ({ ...prev, mobileNo: text }))
+              }
+              style={styles.input}
+            />
+            <PaperTextInput
+              mode="outlined"
+              label="Gender"
+              value={editData.gender}
+              onChangeText={(text) =>
+                setEditData((prev) => ({ ...prev, gender: text }))
+              }
+              style={styles.input}
+            />
+            <PaperTextInput
+              mode="outlined"
+              label="Batch"
+              value={editData.batch}
+              onChangeText={(text) =>
+                setEditData((prev) => ({ ...prev, batch: text }))
+              }
+              style={styles.input}
+            />
+            <PaperTextInput
+              mode="outlined"
+              label="Mess ID"
+              value={editData.messId}
+              onChangeText={(text) =>
+                setEditData((prev) => ({ ...prev, messId: text }))
+              }
+              style={styles.input}
+            />
+            <Button mode="contained" onPress={saveEdit}>
+              Save Changes
+            </Button>
+            <Button
+              mode="text"
+              onPress={() => setIsEditing(false)}
+              color="gray"
+            >
+              Cancel
+            </Button>
+          </View>
         )}
       </View>
-    </ScrollView>
+    </PaperProvider>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: "#e0f2f1",
-    padding: 20,
+    flex: 1,
+    padding: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1E7C2F",
+    marginBottom: 16,
     textAlign: "center",
-    marginBottom: 20,
+    color: "#1976D2",
   },
-  messContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  messBlock: {
-    width: "48%",
-    backgroundColor: "#1E7C2F",
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 10,
-    alignItems: "center",
-  },
-  messText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  studentsContainer: {
-    marginTop: 20,
-  },
-  selectedMessText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1E7C2F",
-    marginBottom: 10,
+  input: {
+    marginVertical: 8,
   },
   studentCard: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 5,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#1E7C2F",
+    marginVertical: 8,
   },
-  studentText: {
-    fontSize: 16,
-    color: "#333",
+  editForm: {
+    marginTop: 16,
   },
-  noDataText: {
-    fontSize: 16,
-    color: "#999",
-    textAlign: "center",
-    marginTop: 10,
+  subtitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
 });
 

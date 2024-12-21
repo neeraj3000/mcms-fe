@@ -1,11 +1,11 @@
-import bcrypt from 'bcrypt'; // For password hashing
+// import bcrypt from 'bcrypt'; // For password hashing
 import { collection, query, where, orderBy, limit, getDocs, addDoc, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"; 
 import { Timestamp } from "firebase/firestore"; // For timestamps
 import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
 
-const SALT_ROUNDS = 10; // Define the number of salt rounds for bcrypt
+// const SALT_ROUNDS = 10; // Define the number of salt rounds for bcrypt
 
-// Register Authority
+/*// Register Authority(need update)
 export async function registerAuthority({ name, mobileNo, email, password }) {
     try {
       if (!name || !mobileNo || !email || !password) {
@@ -52,8 +52,55 @@ export async function registerAuthority({ name, mobileNo, email, password }) {
       console.error(err);
       return { success: false, error: err.message };
     }
+}*/
+ 
+// Register Authority
+export async function registerAuthority({ name, mobileNo, email, password }) {
+  try {
+    if (!name || !mobileNo || !email || !password) {
+      return { success: false, message: 'All fields are required' };
+    }
+
+    const usersRef = collection(firestore, 'users');
+    const authorityRef = collection(firestore, 'authority');
+
+    // Generate auto-incrementing userId
+    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
+    const lastUserSnapshot = await getDocs(lastUserQuery);
+    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
+
+    // Add user document
+    const userData = {
+      userId: newUserId,
+      role: 'authority',
+      email,
+      password, // Plain text password
+      createdAt: Timestamp.now(),
+    };
+    await setDoc(doc(usersRef, newUserId.toString()), userData);
+
+    // Generate auto-incrementing authorityId
+    const lastAuthorityQuery = query(authorityRef, orderBy('authorityId', 'desc'), limit(1));
+    const lastAuthoritySnapshot = await getDocs(lastAuthorityQuery);
+    const newAuthorityId = lastAuthoritySnapshot.empty ? 1 : lastAuthoritySnapshot.docs[0].data().authorityId + 1;
+
+    // Add authority document
+    const authorityData = {
+      authorityId: newAuthorityId,
+      name,
+      mobileNo,
+      userId: newUserId,
+      createdAt: Timestamp.now(),
+    };
+    await setDoc(doc(authorityRef, newAuthorityId.toString()), authorityData);
+
+    return { success: true, message: 'Authority registered successfully', authorityId: newAuthorityId };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
   }
-  
+}
+
   // Get All Authorities
 export async function getAllAuthorities() {
     try {
@@ -121,7 +168,7 @@ export async function updateAuthorityProfile(authorityId, { name, mobileNo }) {
     }
   }
   
-  // Update Authority Password
+ /* // Update Authority Password(need update)
 export async function updateAuthorityPassword(authorityId, { newPassword }) {
     try {
       if (!newPassword) {
@@ -157,7 +204,51 @@ export async function updateAuthorityPassword(authorityId, { newPassword }) {
       console.error(err);
       return { success: false, error: err.message };
     }
+  }*/
+
+// Update Authority Password
+export async function updateAuthorityPassword(authorityId, { newPassword }) {
+  try {
+    if (!newPassword) {
+      return { success: false, message: 'New password is required' };
+    }
+
+    const authorityRef = collection(firestore, 'authority');
+    const authorityQuery = query(
+      authorityRef,
+      where('authorityId', '==', parseInt(authorityId))
+    );
+    const snapshot = await getDocs(authorityQuery);
+
+    if (snapshot.empty) {
+      return { success: false, message: 'Authority not found' };
+    }
+
+    const authorityDoc = snapshot.docs[0];
+    const userId = authorityDoc.data().userId;
+
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const userDocRef = doc(firestore, 'users', userDoc.id);
+
+    await updateDoc(userDocRef, {
+      password: newPassword, // Plain text password
+      updatedAt: Timestamp.now(),
+    });
+
+    return { success: true, message: 'Password updated successfully' };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
   }
+}
   
   // Delete Authority by ID
 export async function deleteAuthorityById(authorityId) {

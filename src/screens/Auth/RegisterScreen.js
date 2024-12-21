@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ScrollView, // Import ScrollView
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
@@ -67,91 +68,96 @@ const RegisterPage = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <View style={styles.logo}>
-          <Image
-            source={require("../../../assets/images/rgulogo2.png")}
-            style={styles.logoImage}
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.container}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logo}>
+            <Image
+              source={require("../../../assets/images/rgulogo2.png")}
+              style={styles.logoImage}
+            />
+          </View>
+          <Text style={styles.title}>Mess Complaint Management System</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <Text style={styles.heading}>Create New Account</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            value={name}
+            onChangeText={setName}
           />
-        </View>
-        <Text style={styles.title}>Mess Complaint Management System</Text>
-      </View>
+          <TextInput
+            style={styles.input}
+            placeholder="College Id"
+            value={collegeId}
+            onChangeText={setCollegeId}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Mobile Number"
+            value={mobNumber}
+            onChangeText={setMobNumber}
+            keyboardType="numeric"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Batch"
+            value={batch}
+            onChangeText={setBatch}
+          />
+          <Text style={styles.label}>Gender:</Text>
+          <Picker
+            selectedValue={gender}
+            onValueChange={(itemValue) => setGender(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Male" value="Male" />
+            <Picker.Item label="Female" value="Female" />
+          </Picker>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            secureTextEntry={true}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            secureTextEntry={true}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
 
-      <View style={styles.formContainer}>
-        <Text style={styles.heading}>Create New Account</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Name"
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="College Id"
-          value={collegeId}
-          onChangeText={setCollegeId}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Mobile Number"
-          value={mobNumber}
-          onChangeText={setMobNumber}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Batch"
-          value={batch}
-          onChangeText={setBatch}
-        />
-        <Text style={styles.label}>Gender:</Text>
-        <Picker
-          selectedValue={gender}
-          onValueChange={(itemValue) => setGender(itemValue)}
-          style={styles.picker}
-        >
-          <Picker.Item label="Male" value="Male" />
-          <Picker.Item label="Female" value="Female" />
-        </Picker>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry={true}
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm Password"
-          secureTextEntry={true}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-
-        <TouchableOpacity style={styles.button} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
-
-        <View style={styles.linksContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.linkText}>Login</Text>
+          <TouchableOpacity style={styles.button} onPress={handleRegister}>
+            <Text style={styles.buttonText}>Sign Up</Text>
           </TouchableOpacity>
+
+          <View style={styles.linksContainer}>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.linkText}>Login</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1, // Ensures content grows within the ScrollView
+  },
   container: {
     flex: 1,
     backgroundColor: "#e3f2fd",

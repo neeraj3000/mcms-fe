@@ -13,7 +13,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useSession } from "../../SessionContext";
-import { createIssue } from "../../../backend/issues"; // Import the Firebase function
+import { createIssue } from "../../../backend/issuesnew"; // Import the Firebase function
 
 const ReportIssue = () => {
   const { user } = useSession(); // Access session data

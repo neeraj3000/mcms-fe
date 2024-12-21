@@ -1,8 +1,8 @@
 import { collection, query, where, getDocs, addDoc, doc, setDoc, orderBy, limit, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore'; // Required Firestore imports
 import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 
-// Register Student and User
+/*// Register Student and User(need update)
 export const registerStudent = async (name, collegeId, mobileNo, gender, batch, email, password) => {
   try {
     if (!name || !collegeId || !mobileNo || !gender || !batch || !email || !password) {
@@ -23,6 +23,50 @@ export const registerStudent = async (name, collegeId, mobileNo, gender, batch, 
       role: 'student',
       email,
       password: hashedPassword,
+      createdAt: Timestamp.now(),
+    };
+
+    await setDoc(doc(usersRef, newUserId.toString()), userData);
+
+    const studentData = {
+      userId: newUserId,
+      name,
+      collegeId,
+      mobileNo,
+      gender,
+      batch,
+      messId: null,
+      createdAt: Timestamp.now(),
+    };
+
+    await addDoc(studentsRef, studentData);
+
+    return { success: true, message: 'Student registered successfully', userId: newUserId };
+  } catch (err) {
+    console.error(err);
+    throw new Error(err.message);
+  }
+};*/
+
+// Register Student and User
+export const registerStudent = async (name, collegeId, mobileNo, gender, batch, email, password) => {
+  try {
+    if (!name || !collegeId || !mobileNo || !gender || !batch || !email || !password) {
+      throw new Error('All fields are required');
+    }
+
+    const usersRef = collection(firestore, 'users');
+    const studentsRef = collection(firestore, 'Student');
+
+    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
+    const lastUserSnapshot = await getDocs(lastUserQuery);
+    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
+
+    const userData = {
+      userId: newUserId,
+      role: 'student',
+      email,
+      password, // Plain text password
       createdAt: Timestamp.now(),
     };
 
@@ -231,7 +275,7 @@ export const updateMessByCollegeId = async (collegeId, messId) => {
     }
   };
 
-// Update Student Password
+/*// Update Student Password(need update)
 export const updateStudentPassword = async (userId, newPassword) => {
     try {
       if (!newPassword) {
@@ -256,7 +300,33 @@ export const updateStudentPassword = async (userId, newPassword) => {
       console.error(err);
       throw new Error(err.message);
     }
-  };
+  };*/
+
+// Update Student Password
+export const updateStudentPassword = async (userId, newPassword) => {
+  try {
+    if (!newPassword) {
+      throw new Error('New password is required');
+    }
+
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', parseInt(userId)));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+      throw new Error('No user found with this userId');
+    }
+
+    const userDoc = userSnapshot.docs[0];
+
+    await updateDoc(userDoc.ref, { password: newPassword, updatedAt: Timestamp.now() });
+
+    return { success: true, message: 'Password updated successfully' };
+  } catch (err) {
+    console.error(err);
+    throw new Error(err.message);
+  }
+};
 
 // Delete User by CollegeId
 export const deleteUserByCollegeId = async (collegeId) => {
@@ -381,7 +451,7 @@ export const updateMessByBatch = async ( batch, messId ) => {
     }
   };
 
-// Update Student Password by CollegeId
+/*// Update Student Password by CollegeId(need update)
 export const updateStudentPasswordByCollegeId = async (collegeId, newPassword ) => {
     try {
       if (!newPassword) {
@@ -417,7 +487,44 @@ export const updateStudentPasswordByCollegeId = async (collegeId, newPassword ) 
       console.error(err);
       return { success: false, error: err.message };
     }
-  };
+  };*/
+
+// Update Student Password by CollegeId
+export const updateStudentPasswordByCollegeId = async (collegeId, newPassword) => {
+  try {
+    if (!newPassword) {
+      return { success: false, message: 'New password is required' };
+    }
+
+    const studentsRef = collection(firestore, 'Student');
+    const studentQuery = query(studentsRef, where('collegeId', '==', collegeId));
+    const studentSnapshot = await getDocs(studentQuery);
+
+    if (studentSnapshot.empty) {
+      return { success: false, message: 'No student found with this collegeId' };
+    }
+
+    const studentDoc = studentSnapshot.docs[0];
+    const userId = studentDoc.data().userId;
+
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+      return { success: false, message: 'No user found with this userId' };
+    }
+
+    const userDoc = userSnapshot.docs[0];
+
+    await updateDoc(userDoc.ref, { password: newPassword, updatedAt: Timestamp.now() });
+
+    return { success: true, message: 'Password updated successfully' };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+};
 
 // Retrieve Students by Batch and Gender
 export const getStudentsByBatchAndGender = async ( batch, gender ) => {
