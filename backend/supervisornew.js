@@ -1,9 +1,9 @@
 import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 import { collection, query, where, getDocs, orderBy, limit, doc, setDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-const SALT_ROUNDS = 10;
+// const SALT_ROUNDS = 10;
 
-// Register Supervisor
+/*// Register Supervisor(need update)
 export const registerSupervisor = async ({ name, mobileNo, email, password }) => {
   try {
     if (!name || !mobileNo || !email || !password) {
@@ -43,6 +43,58 @@ export const registerSupervisor = async ({ name, mobileNo, email, password }) =>
     };
     await setDoc(supervisorDocRef, supervisorData);
 
+    return { success: true, message: 'Supervisor registered successfully', supervisorId: newSupervisorId };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+};*/
+
+// Register Supervisor
+export const registerSupervisor = async ( name, mobileNo, email, password ) => {
+  try {
+    // Validate required fields
+    if (!name || !mobileNo || !email || !password) {
+      return { success: false, message: 'All fields are required' };
+    }
+
+    // Reference to collections
+    const usersRef = collection(firestore, 'users');
+    const supervisorsRef = collection(firestore, 'supervisor');
+
+    // Get the last user ID and increment for the new user
+    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
+    const lastUserSnapshot = await getDocs(lastUserQuery);
+    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
+
+    // Create the user document
+    const userDocRef = doc(usersRef, newUserId.toString());
+    const userData = {
+      userId: newUserId,
+      role: 'supervisor',
+      email,
+      password, // Storing plain text password directly
+      createdAt: Timestamp.now(),
+    };
+    await setDoc(userDocRef, userData);
+
+    // Get the last supervisor ID and increment for the new supervisor
+    const lastSupervisorQuery = query(supervisorsRef, orderBy('supervisorId', 'desc'), limit(1));
+    const lastSupervisorSnapshot = await getDocs(lastSupervisorQuery);
+    const newSupervisorId = lastSupervisorSnapshot.empty ? 1 : lastSupervisorSnapshot.docs[0].data().supervisorId + 1;
+
+    // Create the supervisor document
+    const supervisorDocRef = doc(supervisorsRef, newSupervisorId.toString());
+    const supervisorData = {
+      supervisorId: newSupervisorId,
+      name,
+      mobileNo,
+      userId: newUserId,
+      createdAt: Timestamp.now(),
+    };
+    await setDoc(supervisorDocRef, supervisorData);
+
+    // Return success response
     return { success: true, message: 'Supervisor registered successfully', supervisorId: newSupervisorId };
   } catch (err) {
     console.error(err);
@@ -170,7 +222,7 @@ export const deleteSupervisorById = async (supervisorId) => {
     }
   };
 
-// Update Supervisor Password
+/*// Update Supervisor Password(need update)
 export const updateSupervisorPassword = async (supervisorId, newPassword) => {
     try {
       if (!newPassword) {
@@ -207,6 +259,43 @@ export const updateSupervisorPassword = async (supervisorId, newPassword) => {
       return { success: false, error: err.message };
     }
   };
+*/
+
+// Update Supervisor Password
+export const updateSupervisorPassword = async (supervisorId, newPassword) => {
+  try {
+    if (!newPassword) {
+      return { success: false, message: 'New password is required' };
+    }
+
+    const supervisorsRef = collection(firestore, 'supervisor');
+    const idQuery = query(supervisorsRef, where('supervisorId', '==', parseInt(supervisorId)));
+    const snapshot = await getDocs(idQuery);
+
+    if (snapshot.empty) {
+      return { success: false, message: 'Supervisor not found' };
+    }
+
+    const supervisorDoc = snapshot.docs[0];
+    const userId = supervisorDoc.data().userId;
+
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    await updateDoc(userDoc.ref, { password: newPassword, updatedAt: Timestamp.now() });
+
+    return { success: true, message: 'Password updated successfully' };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+};
 
 // Get Supervisor by UserId
 export const getSupervisorByUserId = async (userId) => {

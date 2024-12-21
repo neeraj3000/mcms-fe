@@ -1,11 +1,11 @@
 import { collection, getDocs, query, where, orderBy, limit, addDoc, doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { firestore } from './firebase';
-import bcrypt from 'bcrypt';
+// import bcrypt from 'bcrypt';
 
 // Salt rounds for bcrypt
-const saltRounds = 10;
+// const saltRounds = 10;
 
-// Register Coordinator
+/*// Register Coordinator(need update)
 export async function registerCoordinator(name, mobileNo, email, password) {
   try {
     if (!name || !mobileNo || !email || !password) {
@@ -44,6 +44,61 @@ export async function registerCoordinator(name, mobileNo, email, password) {
     await addDoc(coordinatorsRef, coordinatorData);
 
     return { success: true, message: 'Coordinator registered successfully', coordinatorId: newCoordinatorId };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+}*/
+
+// Register Coordinator
+export async function registerCoordinator(name, mobileNo, email, password) {
+  try {
+    if (!name || !mobileNo || !email || !password) {
+      throw new Error('All fields are required');
+    }
+
+    const usersRef = collection(firestore, 'users');
+    const coordinatorsRef = collection(firestore, 'coordinator');
+
+    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
+    const lastUserSnapshot = await getDocs(lastUserQuery);
+    const newUserId = lastUserSnapshot.empty
+      ? 1
+      : lastUserSnapshot.docs[0].data().userId + 1;
+
+    const userData = {
+      userId: newUserId,
+      role: 'coordinator',
+      email,
+      password, // Plain text password
+      createdAt: Timestamp.now(),
+    };
+    await addDoc(usersRef, userData);
+
+    const lastCoordinatorQuery = query(
+      coordinatorsRef,
+      orderBy('coordinatorId', 'desc'),
+      limit(1)
+    );
+    const lastCoordinatorSnapshot = await getDocs(lastCoordinatorQuery);
+    const newCoordinatorId = lastCoordinatorSnapshot.empty
+      ? 1
+      : lastCoordinatorSnapshot.docs[0].data().coordinatorId + 1;
+
+    const coordinatorData = {
+      coordinatorId: newCoordinatorId,
+      name,
+      mobileNo,
+      userId: newUserId,
+      createdAt: Timestamp.now(),
+    };
+    await addDoc(coordinatorsRef, coordinatorData);
+
+    return {
+      success: true,
+      message: 'Coordinator registered successfully',
+      coordinatorId: newCoordinatorId,
+    };
   } catch (err) {
     console.error(err);
     return { success: false, error: err.message };
@@ -118,7 +173,7 @@ export async function updateCoordinatorProfile(coordinatorId, name, mobileNo) {
   }
 }
 
-// Update Coordinator Password
+/*// Update Coordinator Password(need update)
 export async function updateCoordinatorPassword(coordinatorId, newPassword) {
   try {
     if (!newPassword) {
@@ -150,6 +205,50 @@ export async function updateCoordinatorPassword(coordinatorId, newPassword) {
     const userDocRef = doc(firestore, 'users', userDoc.id);
 
     await updateDoc(userDocRef, { password: hashedPassword, updatedAt: serverTimestamp() });
+
+    return { success: true, message: 'Password updated successfully' };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+}*/
+
+// Update Coordinator Password
+export async function updateCoordinatorPassword(coordinatorId, newPassword) {
+  try {
+    if (!newPassword) {
+      throw new Error('New password is required');
+    }
+
+    const coordinatorsRef = collection(firestore, 'coordinator');
+    const coordinatorQuery = query(
+      coordinatorsRef,
+      where('coordinatorId', '==', parseInt(coordinatorId))
+    );
+    const snapshot = await getDocs(coordinatorQuery);
+
+    if (snapshot.empty) {
+      return { success: false, message: 'Coordinator not found' };
+    }
+
+    const coordinatorDoc = snapshot.docs[0];
+    const userId = coordinatorDoc.data().userId;
+
+    const usersRef = collection(firestore, 'users');
+    const userQuery = query(usersRef, where('userId', '==', userId));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const userDocRef = doc(firestore, 'users', userDoc.id);
+
+    await updateDoc(userDocRef, {
+      password: newPassword, // Plain text password
+      updatedAt: Timestamp.now(),
+    });
 
     return { success: true, message: 'Password updated successfully' };
   } catch (err) {

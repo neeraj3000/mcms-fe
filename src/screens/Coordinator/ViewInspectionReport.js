@@ -3,186 +3,259 @@ import {
   View,
   Text,
   StyleSheet,
-  Button,
   ActivityIndicator,
   Alert,
   ScrollView,
+  Button,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { DataTable } from "react-native-paper";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import ExcelJS from "exceljs";
-
-// Sample inspection data
-const inspectionData = [
-  {
-    InspectionID: 1,
-    messNo: 1,
-    mrId: 1,
-    InspectionDate: "2024-12-15T22:23:27.000Z",
-    QualityAndExpiry: 4,
-    StandardsOfMaterials: 4,
-    StaffAndFoodAdequacy: 5,
-    MenuDiscrepancies: 3,
-    SupervisorUpdates: 4,
-    FoodTasteAndQuality: 5,
-    KitchenHygiene: 4,
-    UtensilCleanliness: 4,
-    ServiceTimingsAdherence: 4,
-    Comments: "Inspection completed successfully",
-  },
-  {
-    InspectionID: 2,
-    messNo: 2,
-    mrId: 2,
-    InspectionDate: "2024-12-15T22:23:27.000Z",
-    QualityAndExpiry: 3,
-    StandardsOfMaterials: 4,
-    StaffAndFoodAdequacy: 4,
-    MenuDiscrepancies: 4,
-    SupervisorUpdates: 3,
-    FoodTasteAndQuality: 4,
-    KitchenHygiene: 3,
-    UtensilCleanliness: 4,
-    ServiceTimingsAdherence: 3,
-    Comments: "Minor issues noted",
-  },
-];
-
-// Function to dynamically generate table headers
-const getHeaders = (data) => {
-  const headers = Object.keys(data[0]);
-  return headers.map((header) => ({
-    label: header.replace(/([A-Z])/g, " $1").toUpperCase(),
-    key: header,
-  }));
-};
+import { getInspectionReportsByMessNo } from "../../../backend/inspectionnew"; // Replace with correct path
 
 const InspectionReports = () => {
+  const [messNo, setMessNo] = useState(""); // Selected mess number
   const [reports, setReports] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const headers = getHeaders(inspectionData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [headers, setHeaders] = useState([]);
+  const [rows, setRows] = useState([]);
 
-  useEffect(() => {
-    // Simulating API call to fetch reports
-    const fetchReports = () => {
-      setIsLoading(true);
-      setTimeout(() => {
-        setReports(inspectionData);
-        setIsLoading(false);
-      }, 1000);
-    };
-
-    fetchReports();
-  }, []);
-
-  const generateAndShareExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Inspection Reports");
-
-    // Add headers to the worksheet
-    worksheet.columns = headers.map((header) => ({
-      header: header.label,
-      key: header.key,
-      width: 25,
-    }));
-
-    // Add rows
-    reports.forEach((item) => worksheet.addRow(item));
-
+  const fetchReports = async (selectedMessNo) => {
+    setIsLoading(true);
+    setError("");
     try {
-      // Write workbook to a buffer
-      const buffer = await workbook.xlsx.writeBuffer();
+      const response = await getInspectionReportsByMessNo(selectedMessNo);
+      if (response.success) {
+        setReports(response.inspectionReports);
 
-      // Define file path
-      const fileUri = FileSystem.documentDirectory + "inspection_reports.xlsx";
+        let headers = [];
+        let rows = [];
 
-      // Write the buffer to a file
-      await FileSystem.writeAsStringAsync(fileUri, buffer.toString("base64"), {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+        // Loop through the reports to build headers and rows
+        for (let i = 0; i < response.inspectionReports.length; i++) {
+          let obj = response.inspectionReports[i].options; // Get the options from each report
+          let row = [];
 
-      // Share the file
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-        Alert.alert("Success", "Excel file has been shared successfully!");
+          // For the first row, we need to populate headers
+          if (i === 0) {
+            for (let key in obj) {
+              row.push(obj[key]); // Add the option value to the row
+              headers.push(key); // Add the key (option name) to the headers
+            }
+          } else {
+            // For other rows, just add the values for options
+            for (let key in obj) {
+              row.push(obj[key]);
+            }
+          }
+          rows.push(row);
+        }
+
+        // Now, headers and rows are ready
+        setHeaders(headers);
+        setRows(rows);
       } else {
-        Alert.alert("Error", "Sharing is not available on this device.");
+        setReports([]);
+        setError(response.message || "Failed to fetch reports.");
       }
-    } catch (error) {
-      Alert.alert("Error", "Failed to generate or share the Excel file.");
-      console.error("Error: ", error);
+    } catch (err) {
+      setError("An error occurred while fetching reports.");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#1E88E5" />
-        <Text>Loading inspection reports...</Text>
-      </View>
-    );
-  }
+  const generateAndShareExcel = async () => {
+    if (reports.length === 0) {
+      Alert.alert("Error", "No reports available to download.");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Inspection Reports");
+
+    // Add header row
+    if (reports.length > 0) {
+      const columns = Object.keys(reports[0]).map((key) => ({
+        header: key.replace(/([A-Z])/g, " $1").toUpperCase(),
+        key,
+        width: 25,
+      }));
+      worksheet.columns = columns;
+
+      // Add rows
+      reports.forEach((report) => worksheet.addRow(report));
+
+      // Write Excel to file
+      const fileUri = FileSystem.documentDirectory + "InspectionReports.xlsx";
+
+      try {
+        const buffer = await workbook.xlsx.writeBuffer();
+        await FileSystem.writeAsStringAsync(
+          fileUri,
+          buffer.toString("base64"),
+          {
+            encoding: FileSystem.EncodingType.Base64,
+          }
+        );
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri);
+          Alert.alert("Success", "Excel file shared successfully!");
+        } else {
+          Alert.alert("Error", "Sharing is not available on this device.");
+        }
+      } catch (error) {
+        Alert.alert("Error", "Failed to generate Excel file.");
+        console.error("Error: ", error);
+      }
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Inspection Reports</Text>
-      <ScrollView style={styles.scrollContainer}>
-        <ScrollView horizontal>
-          <DataTable>
-            <DataTable.Header style={styles.header}>
-              {headers.map((header, index) => (
-                <DataTable.Title key={index} style={styles.cellHeader}>
-                  {header.label}
-                </DataTable.Title>
-              ))}
-            </DataTable.Header>
 
-            {reports.map((item, index) => (
-              <DataTable.Row key={index} style={styles.row}>
-                {headers.map((header) => (
-                  <DataTable.Cell key={header.key} style={styles.cell}>
-                    {header.key === "InspectionDate"
-                      ? new Date(item[header.key]).toLocaleDateString()
-                      : item[header.key]}
-                  </DataTable.Cell>
+      <View style={styles.pickerContainer}>
+        <Text style={styles.pickerLabel}>Select Mess Number:</Text>
+        <Picker
+          selectedValue={messNo}
+          onValueChange={(value) => {
+            setMessNo(value);
+            if (value) fetchReports(value);
+          }}
+          style={styles.picker}
+        >
+          <Picker.Item label="Select Mess Number" value="" />
+          <Picker.Item label="Mess 1" value="1" />
+          <Picker.Item label="Mess 2" value="2" />
+          <Picker.Item label="Mess 3" value="3" />
+          <Picker.Item label="Mess 4" value="4" />
+        </Picker>
+      </View>
+
+      {isLoading && (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color="#1E88E5" />
+          <Text>Loading inspection reports...</Text>
+        </View>
+      )}
+
+      {!isLoading && error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {!isLoading && rows.length > 0 && (
+        <ScrollView horizontal style={styles.scrollContainer}>
+          <View style={styles.tableContainer}>
+            {/* Render the header row */}
+            <View style={styles.row}>
+              {headers.map((header, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.cellHeader,
+                    { width: `${100 / headers.length}%` },
+                  ]}
+                >
+                  <Text style={styles.headerText}>{header}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Render the data rows */}
+            {rows.map((row, index) => (
+              <View key={index} style={styles.row}>
+                {row.map((value, idx) => (
+                  <View
+                    key={idx}
+                    style={[styles.cell, { width: `${100 / headers.length}%` }]}
+                  >
+                    <Text>{value}</Text>
+                  </View>
                 ))}
-              </DataTable.Row>
+              </View>
             ))}
-          </DataTable>
+          </View>
         </ScrollView>
-      </ScrollView>
+      )}
+
       <Button title="Download as Excel" onPress={generateAndShareExcel} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#E3F2FD", padding: 10 },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: "#F5F5F5", padding: 20 },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
     color: "#1E88E5",
+    marginBottom: 20,
+  },
+  pickerContainer: {
+    marginBottom: 20,
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 10,
+    elevation: 3,
+  },
+  pickerLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#555",
     marginBottom: 10,
   },
-  scrollContainer: { marginBottom: 10 },
-  header: { backgroundColor: "#BBDEFB" },
-  cellHeader: {
-    fontWeight: "bold",
-    color: "#1E88E5",
-    minWidth: 120,
-    textAlign: "center",
+  picker: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContainer: {
+    marginBottom: 20,
+  },
+  tableContainer: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   row: {
+    flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: "#ddd",
+  },
+  cellHeader: {
+    backgroundColor: "#1E88E5",
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 120,
+    borderRightWidth: 1,
+    borderRightColor: "#ddd",
+  },
+  headerText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   cell: {
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
     minWidth: 120,
+  },
+  error: {
+    color: "red",
     textAlign: "center",
-    paddingVertical: 10,
+    marginVertical: 10,
   },
 });
 

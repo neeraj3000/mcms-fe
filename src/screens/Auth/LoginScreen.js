@@ -8,15 +8,15 @@ import {
   Image,
 } from "react-native";
 import { useSession } from "../../SessionContext"; // Import context
-import { loginUser } from "../../../backend/auth";
-
+import { loginUser } from "../../../backend/authnew";
+// import {registerForPushNotificationsAsync} from "../../utils/registerNotifications"
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useSession(); // Access the login function from context
   const fetchLogin = async () => {
     try {
-      const response = await loginUser({ email, password });
+      const response = await loginUser( email, password );
       if (response.success) {
         return response.user;
       } else {
@@ -45,18 +45,18 @@ const LoginPage = ({ navigation }) => {
           name: user.name,
           id: user.userId, // This is where you store the userId
         });
-        await registerForPushNotificationsAsync(user.userId, user.role);
-        const { sendNotificationToUser } = require("./pushNotifications");
-        // Replace with the actual user ID
-        const message = "Hello, this is a personalized notification!";
+        // await registerForPushNotificationsAsync(user.userId, user.role);
+        // const { sendNotificationToUser } = require("../../../backend/pushNotifications");
+        // // Replace with the actual user ID
+        // const message = "Hello, this is a personalized notification!";
 
-        sendNotificationToUser(user.userId, message)
-          .then(() => {
-            console.log("Notification sent successfully!");
-          })
-          .catch((error) => {
-            console.error("Error sending notification:", error);
-          });
+        // sendNotificationToUser(user.userId, message)
+        //   .then(() => {
+        //     console.log("Notification sent successfully!");
+        //   })
+        //   .catch((error) => {
+        //     console.error("Error sending notification:", error);
+        //   });
 
         // Navigate based on user role
 
@@ -64,13 +64,13 @@ const LoginPage = ({ navigation }) => {
           case "student":
             navigation.replace("StudentPage");
             break;
-          case "mess_rep":
+          case "representative":
             navigation.replace("MRPage");
             break;
           case "admin":
             navigation.replace("Admin");
             break;
-          case "faculty":
+          case "coordinator":
             navigation.replace("Coordinator");
             break;
           case "mess_supervisor":

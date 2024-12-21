@@ -10,67 +10,81 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import axios from "axios";
 import RefreshButton from "./RefreshButton"; // Import the RefreshButton component
-import getAllIssues from "../../backend/issuesnew";
+import { getAllIssues } from "../../backend/issuesnew";
+import { useSession } from "../SessionContext";
+import { handleVote, getUserVote } from "../../backend/isvoted";
 
 const IssuesComponent = ({ mode = "none" }) => {
+  const { user } = useSession();
   const [issues, setIssues] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-
-  // To manage upvotes and downvotes per issue
   const [votes, setVotes] = useState({});
 
+  const colors = {
+    primary: "#007bff", // Blue
+    secondary: "#28a745", // Green
+    danger: "#dc3545", // Red
+    lightGray: "#f2f2f2", // Light Gray
+    darkGray: "#888", // Dark Gray
+    white: "#fff",
+  };
+
   const fetchIssues = async () => {
-    if (loading || !hasMore) return; // Prevent fetching if already loading or no more issues to fetch
-  
-    setLoading(true); // Set loading state to true
+    if (loading || !hasMore) return;
+    setLoading(true);
     try {
-      const response = await getAllIssues(); // Await the backend call
-  
+      const response = await getAllIssues();
       if (response.success) {
-        const issuesData = response.issues; // Extract issues from response
-  
+        const issuesData = response.issues;
+
         if (Array.isArray(issuesData)) {
-          // Filter out already existing issues
           const newIssues = issuesData.filter(
             (newIssue) =>
-              !issues.some(
-                (existingIssue) => existingIssue.issueId === newIssue.issueId
-              )
+              !issues.some((existingIssue) => existingIssue.id === newIssue.id)
           );
-  
-          setIssues((prevIssues) => [...prevIssues, ...newIssues]); // Update issues state
-  
-          // Prepare votes for the newly fetched issues
+
           const newVotes = {};
-          newIssues.forEach((issue) => {
-            newVotes[issue.issueId] = { upvoted: false, downvoted: false };
+          for (const issue of newIssues) {
+            const userVote = await getUserVote(issue.id, user.id);
+            newVotes[issue.id] = {
+              upvotes: issue.upvotes || 0,
+              downvotes: issue.downvotes || 0,
+              upvoted: userVote === "upvotes",
+              downvoted: userVote === "downvotes",
+            };
+          }
+
+          const combinedIssues = [...issues, ...newIssues];
+
+          // Sort combined issues based on (upvotes + downvotes)
+          combinedIssues.sort((a, b) => {
+            const votesA =
+              (votes[a.id]?.upvotes || a.upvotes || 0) +
+              (votes[a.id]?.downvotes || a.downvotes || 0);
+            const votesB =
+              (votes[b.id]?.upvotes || b.upvotes || 0) +
+              (votes[b.id]?.downvotes || b.downvotes || 0);
+            return votesB - votesA; // Descending order
           });
-          setVotes((prevVotes) => ({ ...prevVotes, ...newVotes })); // Update votes state
-  
-          setHasMore(newIssues.length > 0); // Update hasMore based on new issues
+
+          setIssues(combinedIssues);
+          setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
+          setHasMore(newIssues.length > 0);
         } else {
-          console.error("Unexpected response format:", response.issues);
-          setHasMore(false); // No more issues to fetch
+          setHasMore(false);
         }
-      } else {
-        console.error("Failed to fetch issues:", response);
-        Alert.alert("Error", "Failed to fetch issues from the server.");
       }
     } catch (error) {
-      console.error("Error fetching issues:", error);
-      Alert.alert("Error", "Failed to fetch issues from the server.");
+      
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false);
     }
   };
-  
 
   useEffect(() => {
     fetchIssues();
@@ -82,14 +96,48 @@ const IssuesComponent = ({ mode = "none" }) => {
     }
   };
 
-  const handleVote = (issueId, voteType) => {
-    setVotes((prevVotes) => ({
-      ...prevVotes,
-      [issueId]: {
-        upvoted: voteType === "upvote" ? !prevVotes[issueId]?.upvoted : false,
-        downvoted: voteType === "downvote" ? !prevVotes[issueId]?.downvoted : false,
-      },
-    }));
+  const handleVotes = async (id, voteType) => {
+    try {
+      if (!user || !user.id) {
+        Alert.alert("Error", "User session not found.");
+        return;
+      }
+
+      const response = await handleVote(id, user.id, voteType);
+
+      if (response?.success) {
+        Alert.alert("Success", response.message);
+
+        setVotes((prevVotes) => {
+          const currentVote = prevVotes[id] || {
+            upvotes: 0,
+            downvotes: 0,
+            upvoted: false,
+            downvoted: false,
+          };
+          const isUpvote = voteType === "upvotes";
+          const isDownvote = voteType === "downvotes";
+
+          return {
+            ...prevVotes,
+            [id]: {
+              upvotes: isUpvote
+                ? currentVote.upvotes + (currentVote.upvoted ? -1 : 1)
+                : currentVote.upvotes - (currentVote.upvoted ? 1 : 0),
+              downvotes: isDownvote
+                ? currentVote.downvotes + (currentVote.downvoted ? -1 : 1)
+                : currentVote.downvotes - (currentVote.downvoted ? 1 : 0),
+              upvoted: isUpvote ? !currentVote.upvoted : false,
+              downvoted: isDownvote ? !currentVote.downvoted : false,
+            },
+          };
+        });
+      } else {
+        Alert.alert("Error", response?.message || "Failed to process the vote.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to process the vote. Please try again.");
+    }
   };
 
   const openModal = (issue) => {
@@ -129,35 +177,63 @@ const IssuesComponent = ({ mode = "none" }) => {
                 <TouchableOpacity
                   style={[
                     styles.voteButton,
-                    votes[item.issueId]?.upvoted ? styles.upvoteActive : styles.voteButtonDefault,
+                    votes[item.id]?.upvoted
+                      ? { backgroundColor: colors.secondary }
+                      : { backgroundColor: colors.lightGray },
                   ]}
-                  onPress={() => handleVote(item.issueId, "upvote")}
+                  onPress={() => handleVotes(item.id, "upvotes")}
                 >
-                  <Text style={[styles.voteText, votes[item.issueId]?.upvoted && styles.activeText]}>
-                    🚀 {votes[item.issueId]?.upvoted ? "Upvoted" : "Upvote"}
+                  <Text
+                    style={[
+                      styles.voteText,
+                      votes[item.id]?.upvoted && { color: colors.white },
+                    ]}
+                  >
+                    🚀 {votes[item.id]?.upvotes || 0}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
                     styles.voteButton,
-                    votes[item.issueId]?.downvoted ? styles.downvoteActive : styles.voteButtonDefault,
+                    votes[item.id]?.downvoted
+                      ? { backgroundColor: colors.danger }
+                      : { backgroundColor: colors.lightGray },
                   ]}
-                  onPress={() => handleVote(item.issueId, "downvote")}
+                  onPress={() => handleVotes(item.id, "downvotes")}
                 >
-                  <Text style={[styles.voteText, votes[item.issueId]?.downvoted && styles.activeText]}>
-                    💥 {votes[item.issueId]?.downvoted ? "Downvoted" : "Downvote"}
+                  <Text
+                    style={[
+                      styles.voteText,
+                      votes[item.id]?.downvoted && { color: colors.white },
+                    ]}
+                  >
+                    💥 {votes[item.id]?.downvotes || 0}
                   </Text>
                 </TouchableOpacity>
               </View>
             )}
+
+            {mode === "none" && (
+              <View style={styles.voteContainerNone}>
+                <Text
+                  style={[
+                    styles.voteTextRight,
+                    { color: colors.primary },
+                  ]}
+                >
+                  🚀 {votes[item.id]?.upvotes || 0} / 💥{" "}
+                  {votes[item.id]?.downvotes || 0}
+                </Text>
+              </View>
+            )}
           </View>
         )}
-        keyExtractor={(item) => item.issueId.toString()}
+        keyExtractor={(item) => item.id.toString()}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
-          loading ? <ActivityIndicator size="large" color="#007bff" /> : null
+          loading ? <ActivityIndicator size="large" color={colors.primary} /> : null
         }
       />
 
@@ -180,9 +256,9 @@ const IssuesComponent = ({ mode = "none" }) => {
                   <Text style={styles.modalLabel}>Description:</Text>{" "}
                   {selectedIssue.description}
                 </Text>
-                {selectedIssue.imageUrl ? (
+                {selectedIssue.image ? (
                   <Image
-                    source={{ uri: selectedIssue.imageUrl }}
+                    source={{ uri: selectedIssue.image }}
                     style={styles.modalImage}
                   />
                 ) : (
@@ -213,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
+    color: "#333", // Dark gray for title
   },
   issueItem: {
     padding: 15,
@@ -228,6 +305,7 @@ const styles = StyleSheet.create({
   issueTitle: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#333",
   },
   issueStatus: {
     fontSize: 14,
@@ -241,23 +319,13 @@ const styles = StyleSheet.create({
   voteButton: {
     padding: 10,
     borderRadius: 5,
-  },
-  voteButtonDefault: {
-    backgroundColor: "#f2f2f2",
-  },
-  upvoteActive: {
-    backgroundColor: "#28a745",
-  },
-  downvoteActive: {
-    backgroundColor: "#dc3545",
+    width: 100,
+    alignItems: "center",
   },
   voteText: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#007bff",
-  },
-  activeText: {
-    color: "#fff",
   },
   modalOverlay: {
     flex: 1,
@@ -266,46 +334,52 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContainer: {
-    width: "80%",
     backgroundColor: "#fff",
-    borderRadius: 8,
     padding: 20,
-    alignItems: "center",
+    borderRadius: 8,
+    width: 300,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center",
   },
   modalText: {
     fontSize: 16,
     marginBottom: 10,
-    textAlign: "center",
   },
   modalLabel: {
     fontWeight: "bold",
   },
   modalImage: {
-    width: 200,
+    width: "100%",
     height: 200,
-    marginVertical: 10,
-    borderRadius: 8,
-  },
-  noImageText: {
-    fontSize: 14,
-    color: "#888",
-    marginVertical: 10,
+    resizeMode: "cover",
+    borderRadius: 10,
+    marginBottom: 15,
   },
   closeButton: {
-    backgroundColor: "#007bff",
+    marginTop: 20,
     padding: 10,
+    backgroundColor: "#007bff",
     borderRadius: 5,
-    marginTop: 10,
   },
   closeButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    textAlign: "center",
+  },
+  voteContainerNone: {
+    marginTop: 10,
+    alignItems: "flex-end",
+  },
+  voteTextRight: {
+    fontSize: 14,
+    color: "#007bff",
+  },
+  noImageText: {
+    color: "#888",
+    fontStyle: "italic",
   },
 });
 

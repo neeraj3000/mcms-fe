@@ -8,21 +8,41 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Image,
   TouchableWithoutFeedback,
-  Keyboard,
 } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
-import axios from "axios";
-import RefreshButton from '../../components/RefreshButton';
+import RefreshButton from "../../components/RefreshButton";
+import { getAllIssues } from "@/backend/issuesnew";
+import { updateIssue } from "@/backend/issuesnew";
+
+// Function to assign colors based on issue status
+const getStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case "forwarded":
+      return "#ff9800"; // Orange
+    case "reraised":
+      return "#f44336"; // Red
+    case "new":
+      return "#2196f3"; // Blue
+    case "resolved":
+      return "#228B22"; // Purple
+    default:
+      return "#888"; // Default grey
+  }
+};
 
 const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
+  const statusColor = getStatusColor(status);
+
   return (
     <View style={styles.issueItem}>
       <TouchableOpacity onPress={onPress} style={styles.issueContent}>
         <Text style={styles.issueTitle}>{title}</Text>
-        <Text style={styles.issueStatus}>{status}</Text>
+        <Text style={[styles.issueStatus, { color: statusColor }]}>
+          {status}
+        </Text>
       </TouchableOpacity>
-      {status !== "resolved" && ( // Show resolve button only if the status is not resolved
+      {status !== "resolved" && (
         <View style={styles.resolveContainer}>
           <TouchableOpacity
             onPress={() => {
@@ -41,7 +61,7 @@ const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
                 ]
               );
             }}
-            style={styles.resolveButton} // Button style
+            style={styles.resolveButton}
           >
             <Text style={styles.resolveButtonText}>Resolve</Text>
           </TouchableOpacity>
@@ -51,8 +71,7 @@ const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
   );
 });
 
-
-const AllIssues = () => {
+const ViewComplaints = () => {
   const [issues, setIssues] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -65,24 +84,23 @@ const AllIssues = () => {
 
     setLoading(true);
     try {
-      const response = await axios.get(
-        `https://mcms-nseo.onrender.com/complaints/issues`
-      );
-
-      const issuesData = response.data.issues;
+      const response = await getAllIssues();
+      const issuesData = response.issues;
 
       if (Array.isArray(issuesData)) {
-        const newIssues = issuesData.filter(
+        const filteredIssues = issuesData.filter(
+          (issue) => issue.status !== "resolved" && issue.status !== "pending"
+        );
+
+        const newIssues = filteredIssues.filter(
           (newIssue) =>
-            !issues.some(
-              (existingIssue) => existingIssue.issueId === newIssue.issueId
-            )
+            !issues.some((existingIssue) => existingIssue.id === newIssue.id)
         );
 
         setIssues((prevIssues) => [...prevIssues, ...newIssues]);
         setHasMore(newIssues.length > 0);
       } else {
-        console.error("Unexpected response format:", response.data);
+        console.error("Unexpected response format:", response);
       }
     } catch (error) {
       console.error("Error fetching issues:", error);
@@ -104,12 +122,8 @@ const AllIssues = () => {
 
   const handleResolve = async (id, index) => {
     try {
-      const res = await axios.put(
-        `https://mcms-nseo.onrender.com/complaints/issues/status/${id}`,
-        { status: "resolved" }
-      );
-
-      if (res.data.success) {
+      const res = await updateIssue(id, { status: "resolved" });
+      if (res.success) {
         setIssues((prevIssues) => {
           const updatedIssues = [...prevIssues];
           updatedIssues[index] = {
@@ -142,26 +156,27 @@ const AllIssues = () => {
   const handleRefresh = () => {
     setPage(1);
     setIssues([]);
+    setHasMore(true);
     fetchIssues();
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>All Issues</Text>
+      <Text style={styles.title}>All Complaints</Text>
 
       <FlatList
         data={issues}
         renderItem={({ item, index }) => (
           <IssueItem
-            key={item.issueId}
-            id={item.issueId}
+            key={item.id}
+            id={item.id}
             title={item.category}
             status={item.status}
-            onResolve={() => handleResolve(item.issueId, index)}
+            onResolve={() => handleResolve(item.id, index)}
             onPress={() => openIssueModal(item)}
           />
         )}
-        keyExtractor={(item) => item.issueId.toString()}
+        keyExtractor={(item) => item.id.toString()}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
@@ -181,6 +196,17 @@ const AllIssues = () => {
               {selectedIssue && (
                 <>
                   <Text style={styles.modalTitle}>Issue Details</Text>
+                  {selectedIssue.image && (
+                    <Image
+                      source={{ uri: selectedIssue.image }}
+                      style={styles.modalImage}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Title: </Text>
+                    {selectedIssue.category}
+                  </Text>
                   <Text style={styles.modalContent}>
                     <Text style={styles.modalSubTitle}>Description: </Text>
                     {selectedIssue.description}
@@ -201,15 +227,6 @@ const AllIssues = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {hasMore && !loading && (
-        <TouchableOpacity
-          onPress={handleLoadMore}
-          style={styles.loadMoreButton}
-        >
-          <Text style={styles.loadMoreText}>Load More</Text>
-        </TouchableOpacity>
-      )}
 
       <RefreshButton onRefresh={handleRefresh} />
     </View>
@@ -247,13 +264,20 @@ const styles = StyleSheet.create({
   issueContent: {
     flex: 1,
   },
+  modalImage: {
+    width: "100%",
+    height: 200,
+    marginBottom: 15,
+    borderRadius: 8,
+  },
+
   issueTitle: {
     fontSize: 16,
     fontWeight: "bold",
   },
   issueStatus: {
     fontSize: 14,
-    color: "#888",
+    fontWeight: "bold",
   },
   resolveContainer: {
     flexDirection: "column",
@@ -270,23 +294,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 14,
-  },
-
-  resolveText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#28a745",
-  },
-  loadMoreButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#007bff",
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  loadMoreText: {
-    color: "#fff",
-    fontSize: 16,
   },
   modalOverlay: {
     flex: 1,
@@ -325,4 +332,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AllIssues;
+export default ViewComplaints;

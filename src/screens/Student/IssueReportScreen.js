@@ -13,7 +13,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useSession } from "../../SessionContext";
-import { createIssue } from "../../../backend/issues"; // Import the Firebase function
+import { createIssue } from "../../../backend/issuesnew"; // Import the Firebase function
 
 const ReportIssue = () => {
   const { user } = useSession(); // Access session data
@@ -63,14 +63,15 @@ const ReportIssue = () => {
     if (!issueType || !description || !messNo) {
       return Alert.alert("Error", "Please fill in all the fields.");
     }
-
+    console.log(user);
+    console.log(user.id);
     try {
       const issueData = {
-        title: issueType,
         description,
-        messNo: parseInt(messNo, 10),
+        category:issueType,
         image,
-        userId: user?.id,
+        userId:user.id,
+        messNo: messNo,
       };
 
       const response = await createIssue(issueData); // Call Firebase function

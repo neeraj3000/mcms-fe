@@ -16,6 +16,9 @@ import axios from "axios";
 import { useSession } from "../../SessionContext";
 import RefreshButton from "../../components/RefreshButton";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; 
+import {getIssuesByUserId} from "../../../backend/issuesnew"
+import {deleteIssue} from "../../../backend/issuesnew"
+import { updateIssue } from "../../../backend/issuesnew";
 
 const IssueHistory = () => {
   const [issueHistory, setIssueHistory] = useState([]);
@@ -30,13 +33,9 @@ const IssueHistory = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await axios.get(
-        `https://mcms-nseo.onrender.com/complaints/issues/user/${user.id}`
-      );
-      if (response.data.success && Array.isArray(response.data.issues)) {
-        setIssueHistory(response.data.issues);
-      } else {
-        Alert.alert("Error", "No valid issues found.");
+      const response = await getIssuesByUserId(user.id);
+      if (response.success && Array.isArray(response.issues)) {
+        setIssueHistory(response.issues);
       }
     } catch (error) {
       console.error("Error fetching issue history:", error);
@@ -76,7 +75,7 @@ const IssueHistory = () => {
         `https://mcms-nseo.onrender.com/complaints/issues/${editedIssue.id}`,
         editedIssue
       );
-      if (response.data.success) {
+      if (response.success) {
         setIssueHistory((prevIssues) =>
           prevIssues.map((issue) =>
             issue.id === editedIssue.id ? { ...editedIssue } : issue
@@ -94,7 +93,7 @@ const IssueHistory = () => {
     }
   };
 
-  const confirmDeleteIssue = (issueId) => {
+  const confirmDeleteIssue = (id) => {
     Alert.alert(
       "Delete Issue",
       "Are you sure you want to delete this issue?",
@@ -103,21 +102,19 @@ const IssueHistory = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => deleteIssue(issueId),
+          onPress: () => deleteIssue(id),
         },
       ],
       { cancelable: true }
     );
   };
 
-  const deleteIssue = async (issueId) => {
+  const deleteIssue = async (id) => {
     try {
-      const response = await axios.delete(
-        `https://mcms-nseo.onrender.com/complaints/issues/${issueId}`
-      );
-      if (response.data.success) {
+      const response = await deleteIssue(id)
+      if (response.success) {
         setIssueHistory((prevIssues) =>
-          prevIssues.filter((issue) => issue.id !== issueId)
+          prevIssues.filter((issue) => issue.id !== id)
         );
         closeModal();
         Alert.alert("Success", "The issue has been deleted.");
@@ -135,11 +132,8 @@ const IssueHistory = () => {
   
     const handleReraise = async () => {
       try {
-        const response = await axios.put(
-          `https://mcms-nseo.onrender.com/complaints/issues/${selectedIssue.id}`,
-          { status: "reraised" }
-        );
-        if (response.data.success) {
+        const response = await updateIssue(selectedIssue.id, {status:"reraised"})
+        if (response.success) {
           setIssueHistory((prevIssues) =>
             prevIssues.map((issue) =>
               issue.id === selectedIssue.id ? { ...selectedIssue, status: "reraised" } : issue
@@ -178,7 +172,7 @@ const IssueHistory = () => {
           Description: {selectedIssue.description}
         </Text>
         {selectedIssue.image && (
-          <Image source={{ uri: selectedIssue.image.url }} style={styles.issueImage} />
+          <Image source={{ uri: selectedIssue.image }} style={styles.issueImage} />
         )}
         {selectedIssue.status === "resolved" && (
           <View style={styles.reraiseSection}>
@@ -200,6 +194,7 @@ const IssueHistory = () => {
   
   
   const renderIssueItem = (issue) => {
+    console.log(issue)
     return (
       <TouchableOpacity
         style={styles.issueItem}
@@ -217,17 +212,20 @@ const IssueHistory = () => {
           Status: {issue.status}
         </Text>
         <Text style={styles.issueDate}>
-          Date:{" "}
-          {new Date(issue.created_at).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </Text>
+  Date:{" "}
+  {new Date(
+    issue.createdAt.seconds * 1000 + Math.floor(issue.createdAt.nanoseconds / 1e6)
+  ).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })}
+</Text>
+
       </TouchableOpacity>
     );
   };
-
+  console.log(issueHistory);
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Issue History</Text>
@@ -235,7 +233,7 @@ const IssueHistory = () => {
         <ActivityIndicator size="large" color="#007BFF" />
       ) : issueHistory.length > 0 ? (
         <ScrollView contentContainerStyle={styles.issueList}>
-          {issueHistory.map((item) => renderIssueItem(item))}
+          {issueHistory.map((item) =>  renderIssueItem(item))}
         </ScrollView>
       ) : (
         <Text style={styles.noIssuesText}>No issues reported yet.</Text>

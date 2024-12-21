@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { db } from "../backend/firebase"; // Import your firebase setup
+import { db } from "../../backend/firebase"; // Import your firebase setup
 import { doc, setDoc } from "firebase/firestore";
 
 // Register Push Notifications

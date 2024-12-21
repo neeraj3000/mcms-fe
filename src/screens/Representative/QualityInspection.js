@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,37 +7,104 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Image,
 } from "react-native";
-import Slider from "@react-native-community/slider";
+import RNPickerSelect from "react-native-picker-select";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import axios from "axios";
-import { useSession } from "../../SessionContext"; // Adjust the path as necessary
+import { useSession } from "../../SessionContext";
+import { getRepresentativeByUserId } from "../../../backend/representativesnew";
+import {
+  getInspectOptions,
+  createInspectionReport,
+} from "../../../backend/inspectionnew";
 
 const QualityInspectionPage = () => {
-  const { user } = useSession(); // Access the session context
-  const [ratings, setRatings] = useState({
-    QualityAndExpiry: 2.5,
-    StandardsOfMaterials: 2.5,
-    StaffAndFoodAdequacy: 2.5,
-    MenuDiscrepancies: 2.5,
-    SupervisorUpdates: 2.5,
-    FoodTasteAndQuality: 2.5,
-    KitchenHygiene: 2.5,
-    UtensilCleanliness: 2.5,
-    ServiceTimingsAdherence: 2.5,
-  });
+  const { user } = useSession();
+  const [ratings, setRatings] = useState({});
+  const [options, setOptions] = useState([]);
   const [comments, setComments] = useState("");
-  const [messNo, setMessNo] = useState("");
+  const [messNo, setMessNo] = useState(null);
+  const [image, setImage] = useState(null);
+
+  // Fetch inspection options
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        if (!user || !user.id) {
+          Alert.alert("Error", "User not logged in.");
+          return;
+        }
+
+        const res = await getRepresentativeByUserId(user.id);
+        if (res.success) {
+          const details = res.representative;
+          setMessNo(details.messNo.toString());
+          const response = await getInspectOptions(details.messNo.toString());
+
+          if (response.success) {
+            const fetchedOptions = response.options;
+            setOptions(fetchedOptions);
+            setRatings(
+              fetchedOptions.reduce((acc, option) => {
+                acc[option] = 1; // Default rating of 1
+                return acc;
+              }, {})
+            );
+          } else {
+            Alert.alert(
+              "Error",
+              response.message || "Failed to fetch inspection options."
+            );
+          }
+        } else {
+          Alert.alert(
+            "Error",
+            res.message || "Failed to fetch representative details."
+          );
+        }
+      } catch (error) {
+        Alert.alert("Error", "An error occurred while fetching data.");
+        console.error("Error fetching options:", error);
+      }
+    };
+
+    fetchOptions();
+  }, [user]);
 
   const handleRatingChange = (category, value) => {
     setRatings((prevRatings) => ({
       ...prevRatings,
-      [category]: value,
+      [category]: parseInt(value),
     }));
+  };
+
+  const handleImagePick = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const compressedImage = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 800 } }],
+          { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        setImage(compressedImage.uri);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to pick an image.");
+      console.error("Image picker error:", error);
+    }
   };
 
   const handleSubmit = async () => {
     if (!messNo) {
-      Alert.alert("Error", "Please fill in the Mess Number.");
+      Alert.alert("Error", "Mess Number is missing.");
       return;
     }
 
@@ -46,40 +113,36 @@ const QualityInspectionPage = () => {
       return;
     }
 
-    const payload = {
-      messNo: messNo,
-      mrId: 5, // Use the logged-in user's ID
-      ...ratings,
-      Comments: comments,
-    };
-    console.log(payload);
     try {
-      const response = await axios.post(
-        "https://mcms-nseo.onrender.com/complaints/inspection",
-        payload
+      console.log(user.id)
+      console.log(messNo)
+      console.log(ratings)
+      const response = await createInspectionReport(
+        user.id,
+        messNo,
+        image,
+        ratings
       );
-
-      if (response.data) {
+      console.log(response.success)
+      if (response.success) {
         Alert.alert("Success", "Quality inspection submitted successfully!");
-        setRatings({
-          QualityAndExpiry: 2.5,
-          StandardsOfMaterials: 2.5,
-          StaffAndFoodAdequacy: 2.5,
-          MenuDiscrepancies: 2.5,
-          SupervisorUpdates: 2.5,
-          FoodTasteAndQuality: 2.5,
-          KitchenHygiene: 2.5,
-          UtensilCleanliness: 2.5,
-          ServiceTimingsAdherence: 2.5,
-        });
+        setRatings(
+          options.reduce((acc, option) => {
+            acc[option] = 1; // Reset to default rating
+            return acc;
+          }, {})
+        );
         setComments("");
-        setMessNo("");
+        setImage(null);
       } else {
-        Alert.alert("Error", "Failed to submit the quality inspection.");
+        Alert.alert(
+          "Error",
+          response.message || "Failed to submit inspection."
+        );
       }
     } catch (error) {
-      console.error("Error submitting quality inspection:", error);
       Alert.alert("Error", "An error occurred while submitting the data.");
+      console.error("Error submitting inspection:", error);
     }
   };
 
@@ -91,23 +154,21 @@ const QualityInspectionPage = () => {
         style={styles.input}
         placeholder="Mess Number"
         value={messNo}
-        onChangeText={setMessNo}
+        editable={false} // Mess number is fetched automatically
       />
 
-      {Object.keys(ratings).map((category) => (
+      {options.map((category) => (
         <View key={category} style={styles.categoryContainer}>
-          <Text style={styles.categoryText}>
-            {category.replace(/([A-Z])/g, " $1")}
-          </Text>
-          <Slider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={5}
-            step={0.1}
-            value={ratings[category]}
+          <Text style={styles.categoryText}>{category}</Text>
+          <RNPickerSelect
             onValueChange={(value) => handleRatingChange(category, value)}
+            items={[...Array(10).keys()].map((num) => ({
+              label: `${num + 1}`,
+              value: num + 1,
+            }))}
+            style={pickerSelectStyles}
+            value={ratings[category]}
           />
-          <Text style={styles.ratingValue}>Rating: {ratings[category]}</Text>
         </View>
       ))}
 
@@ -118,6 +179,14 @@ const QualityInspectionPage = () => {
         onChangeText={setComments}
         multiline
       />
+
+      {image && <Image source={{ uri: image }} style={styles.image} />}
+
+      <TouchableOpacity onPress={handleImagePick} style={styles.imageButton}>
+        <Text style={styles.imageButtonText}>
+          {image ? "Change Image" : "Upload Image"}
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
         <Text style={styles.submitText}>Submit</Text>
@@ -158,14 +227,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
   },
-  slider: {
+  image: {
     width: "100%",
-    height: 40,
+    height: 200,
+    marginBottom: 15,
   },
-  ratingValue: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 5,
+  imageButton: {
+    backgroundColor: "#6c757d",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  imageButtonText: {
+    color: "#fff",
+    fontSize: 16,
   },
   submitButton: {
     backgroundColor: "#007bff",
@@ -177,6 +253,31 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    color: "black",
+    marginBottom: 15,
+    backgroundColor: "#fff",
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    color: "black",
+    marginBottom: 15,
+    backgroundColor: "#fff",
   },
 });
 
