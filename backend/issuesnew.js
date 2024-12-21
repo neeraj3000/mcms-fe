@@ -37,6 +37,7 @@ export async function uploadToCloudinary(image, type) {
 // Create Issue
 export async function createIssue({ description, category, image, userId, messNo }) {
   try {
+    console.log(description+ " " + category+userId+messNo);
     if (!description || !category || !userId || messNo === undefined) {
       throw new Error('All fields are required except image');
     }
@@ -77,7 +78,9 @@ export async function createIssue({ description, category, image, userId, messNo
 export async function getAllIssues() {
   try {
     const snapshot = await getDocs(collection(firestore, "Issues"));
+    console.log(snapshot);
     const issues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // console.log(issues);
     return { success: true, issues };
   } catch (err) {
     console.error(err);

@@ -62,7 +62,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore'; /
  * @param {string} password - User's plain text password
  * @returns {Promise<Object>} - Login response
  */
-export async function login(email, password) {
+export async function loginUser(email, password) {
   try {
     // Check if both email and password are provided
     if (!email || !password) {

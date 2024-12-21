@@ -8,17 +8,15 @@ import {
   Image,
 } from "react-native";
 import { useSession } from "../../SessionContext"; // Import context
-import { loginUser } from "../../../backend/auth";
-// import { sendNotificationToUser } from "../../../backend/pushNotifications";
-// import { registerForPushNotificationsAsync } from "../../utils/registerNotifications";
-
+import { loginUser } from "../../../backend/authnew";
+// import {registerForPushNotificationsAsync} from "../../utils/registerNotifications"
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useSession(); // Access the login function from context
   const fetchLogin = async () => {
     try {
-      const response = await loginUser({ email, password });
+      const response = await loginUser( email, password );
       if (response.success) {
         return response.user;
       } else {
@@ -31,56 +29,57 @@ const LoginPage = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-    let role = "admin";
-    // const user = await fetchLogin();
-    // if (email === "director@gmail.com" && password === "password") {
-    //   login("director");
-    //   navigation.replace("Director");
-    // } else {
-    //   if (!user) {
-    //     alert("Invalid email or password");
-    //   } else {
-    //     // alert(user.userId);
-    //     // Save the session details using login function
-    //     login({
-    //       email: user.email,
-    //       role: user.role,
-    //       name: user.name,
-    //       id: user.userId, // This is where you store the userId
-    //     });
-    // await registerForPushNotificationsAsync(user.userId, user.role);
-    // const { sendNotificationToUser } = require("./pushNotifications");
-    // Replace with the actual user ID
-    // const message = "Hello, this is a personalized notification!";
+    const user = await fetchLogin();
+    if (email === "director@gmail.com" && password === "password") {
+      login("director");
+      navigation.replace("Director");
+    } else {
+      if (!user) {
+        alert("Invalid email or password");
+      } else {
+        // alert(user.userId);
+        // Save the session details using login function
+        login({
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          id: user.userId, // This is where you store the userId
+        });
+        // await registerForPushNotificationsAsync(user.userId, user.role);
+        // const { sendNotificationToUser } = require("../../../backend/pushNotifications");
+        // // Replace with the actual user ID
+        // const message = "Hello, this is a personalized notification!";
 
-    // sendNotificationToUser(user.userId, message)
-    //   .then(() => {
-    //     console.log("Notification sent successfully!");
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error sending notification:", error);
-    //   });
+        // sendNotificationToUser(user.userId, message)
+        //   .then(() => {
+        //     console.log("Notification sent successfully!");
+        //   })
+        //   .catch((error) => {
+        //     console.error("Error sending notification:", error);
+        //   });
 
     // Navigate based on user role
 
-    switch (role) {
-      case "student":
-        navigation.replace("StudentPage");
-        break;
-      case "mess_rep":
-        navigation.replace("MRPage");
-        break;
-      case "admin":
-        navigation.replace("Admin");
-        break;
-      case "faculty":
-        navigation.replace("Coordinator");
-        break;
-      case "mess_supervisor":
-        navigation.replace("Supervisor");
-        break;
-      default:
-        alert("Invalid role");
+        switch (user.role) {
+          case "student":
+            navigation.replace("StudentPage");
+            break;
+          case "representative":
+            navigation.replace("MRPage");
+            break;
+          case "admin":
+            navigation.replace("Admin");
+            break;
+          case "coordinator":
+            navigation.replace("Coordinator");
+            break;
+          case "mess_supervisor":
+            navigation.replace("Supervisor");
+            break;
+          default:
+            alert("Invalid role");
+        }
+      }
     }
   };
 

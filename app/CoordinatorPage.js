@@ -9,10 +9,9 @@ import {
 } from "@react-navigation/drawer";
 import { useSession } from "../src/SessionContext"; // Import session context
 import CoordinatorHome from "../src/screens/Coordinator/Coordinator";
-import ViewIssues from "../src/screens/Coordinator/ViewIssues";
 import RequestInspections from "../src/screens/Coordinator/RequestInspections";
 import ReportTable from "../src/screens/Coordinator/Reports";
-import InspectionReports from "../src/screens/Coordinator/ViewInspectionReport";
+import IssuesCoordinator from "../src/screens/Coordinator/IssuesCoordinator";
 
 const Drawer = createDrawerNavigator();
 
@@ -100,8 +99,8 @@ const AppNavigator = () => {
         }}
       />
       <Drawer.Screen
-        name="View Issues"
-        component={ViewIssues}
+        name="View Complaints"
+        component={IssuesCoordinator}
         options={{
           drawerIcon: ({ color, size }) => (
             <MaterialIcons name="report-problem" size={size} color={color} />
@@ -120,15 +119,6 @@ const AppNavigator = () => {
       <Drawer.Screen
         name="Reports"
         component={ReportTable}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="clipboard-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="myreports"
-        component={InspectionReports}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />

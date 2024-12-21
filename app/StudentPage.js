@@ -45,7 +45,6 @@ const CustomDrawerContent = (props) => {
       { cancelable: true } // Dismiss alert by tapping outside
     );
   };
-  
 
   return (
     <DrawerContentScrollView {...props}>
@@ -123,43 +122,39 @@ const StudentPage = ({ navigation }) => {
     >
       <Tab.Screen name="Home" component={DrawerWrapper(StudentHomePage)} />
       <Tab.Screen
-  name="Mess Menu"
-  component={MessMenuPage}
-  options={({ navigation }) => ({
-    headerShown: true,
-    headerLeft: () => (
-      <Ionicons
-        name="arrow-back"
-        size={24}
-        color="black"
-        style={{ marginLeft: 20 }} // Apply margin directly here
-        onPress={() => navigation.goBack()}
+        name="Mess Menu"
+        component={MessMenuPage}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerLeft: () => (
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color="black"
+              style={{ marginLeft: 20 }} // Apply margin directly here
+              onPress={() => navigation.goBack()}
+            />
+          ),
+          headerTitleAlign: "center", // Optional: Center the title if needed
+        })}
       />
-    ),
-    headerTitleAlign: "center", // Optional: Center the title if needed
-  })}
-/>
-<Tab.Screen
-  name="Profile"
-  component={ProfilePage}
-  options={({ navigation }) => ({
-    headerShown: true,
-    headerLeft: () => (
-      <Ionicons
-        name="arrow-back"
-        size={24}
-        color="black"
-        style={{ marginLeft: 20 }} // Apply margin directly here
-        onPress={() => navigation.goBack()}
+      <Tab.Screen
+        name="Profile"
+        component={ProfilePage}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerLeft: () => (
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color="black"
+              style={{ marginLeft: 20 }} // Apply margin directly here
+              onPress={() => navigation.goBack()}
+            />
+          ),
+          headerTitleAlign: "center", // Optional: Center the title if needed
+        })}
       />
-    ),
-    headerTitleAlign: "center", // Optional: Center the title if needed
-  })}
-/>
-
-
-
-
     </Tab.Navigator>
   );
 };

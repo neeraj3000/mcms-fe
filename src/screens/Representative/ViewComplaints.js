@@ -14,6 +14,8 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 import RefreshButton from '../../components/RefreshButton';  // Import RefreshButton
+import { getAllIssues } from "@/backend/issuesnew";
+import { updateIssue } from "@/backend/issuesnew";
 
 const IssueItem = React.memo(({ id, title, status, onResolve, onForward, onPress }) => {
   return (
@@ -23,7 +25,7 @@ const IssueItem = React.memo(({ id, title, status, onResolve, onForward, onPress
         <Text style={styles.issueStatus}>{status}</Text>
       </TouchableOpacity>
 
-      {status !== "Resolved" && status!== "resolved" && status !== "Forwarded" && (
+      {status!== "resolved" && status !== "forwarded" && (
         <View style={styles.resolveContainer}>
           <TouchableOpacity onPress={onResolve} style={styles.resolveButton}>
             <Icon name="checkmark-circle" size={20} color="#fff" />
@@ -53,24 +55,22 @@ const AllComplaints = () => {
 
     setLoading(true);
     try {
-      const response = await axios.get(
-        `https://mcms-nseo.onrender.com/complaints/issues`
-      );
+      const response = await await getAllIssues()
 
-      const issuesData = response.data.issues;
+      const issuesData = response.issues;
 
       if (Array.isArray(issuesData)) {
         const newIssues = issuesData.filter(
           (newIssue) =>
             !issues.some(
-              (existingIssue) => existingIssue.issueId === newIssue.issueId
+              (existingIssue) => existingIssue.id === newIssue.id
             )
         );
 
         setIssues((prevIssues) => [...prevIssues, ...newIssues]);
         setHasMore(newIssues.length > 0);
       } else {
-        console.error("Unexpected response format:", response.data);
+        console.error("Unexpected response format:", response);
       }
     } catch (error) {
       console.error("Error fetching issues:", error);
@@ -103,17 +103,14 @@ const AllComplaints = () => {
           text: "OK",
           onPress: async () => {
             try {
-              const res = await axios.put(
-                `https://mcms-nseo.onrender.com/complaints/issues/status/${id}`,
-                { status: "resolved" }
-              );
-
-              if (res.data.success) {
+              const res = await updateIssue(id, { status: "resolved" })
+              if (res.success) {
                 setIssues((prevIssues) => {
                   const updatedIssues = [...prevIssues];
                   updatedIssues[index] = {
                     ...updatedIssues[index],
-                    status: "Resolved",
+                    status: "resolved",
+
                   };
                   return updatedIssues;
                 });
@@ -145,17 +142,14 @@ const AllComplaints = () => {
           text: "OK",
           onPress: async () => {
             try {
-              const res = await axios.put(
-                `https://mcms-nseo.onrender.com/complaints/issues/status/${id}`,
-                { status: "forwarded" }
-              );
+              const res = await updateIssue(id, { status: "forwarded" })
 
-              if (res.data.success) {
+              if (res.success) {
                 setIssues((prevIssues) => {
                   const updatedIssues = [...prevIssues];
                   updatedIssues[index] = {
                     ...updatedIssues[index],
-                    status: "Forwarded",
+                    status: "forwarded",
                   };
                   return updatedIssues;
                 });
@@ -198,16 +192,16 @@ const AllComplaints = () => {
         data={issues}
         renderItem={({ item, index }) => (
           <IssueItem
-            key={item.issueId}
-            id={item.issueId}
+            key={item.id}
+            id={item.id}
             title={item.description}
             status={item.status}
-            onResolve={() => handleResolve(item.issueId, index)}
-            onForward={() => handleForward(item.issueId, index)}
+            onResolve={() => handleResolve(item.id, index)}
+            onForward={() => handleForward(item.id, index)}
             onPress={() => openIssueModal(item)}
           />
         )}
-        keyExtractor={(item) => item.issueId.toString()}
+        keyExtractor={(item) => item.id}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         ListFooterComponent={

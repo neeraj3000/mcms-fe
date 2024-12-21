@@ -63,14 +63,15 @@ const ReportIssue = () => {
     if (!issueType || !description || !messNo) {
       return Alert.alert("Error", "Please fill in all the fields.");
     }
-
+    console.log(user);
+    console.log(user.id);
     try {
       const issueData = {
-        title: issueType,
         description,
-        messNo: parseInt(messNo, 10),
+        category:issueType,
         image,
-        userId: user?.id,
+        userId:user.id,
+        messNo: messNo,
       };
 
       const response = await createIssue(issueData); // Call Firebase function

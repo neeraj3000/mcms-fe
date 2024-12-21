@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import ReportIssue from "./IssueReportScreen";
-import IssueHistory from "./HistoryScreen";
-import IssueHistoryRep from "../Representative/HistoryScreenRep";
 import IssuesComponent from "../../components/IssuesComponent";
 import { useSession } from "@/src/SessionContext";
+import ViewComplaints from "./ViewComplaints";
 
 const Tab = createMaterialTopTabNavigator();
 
-export default function App() {
+const IssuesCoordinator = () => {
+  
   const { user, logout } = useSession(); // Assuming logout is available from your session context
   const [role, setRole] = useState(user?.role || null); // Track the role in local state
-  
+
   // Update the role state when the user logs out
   useEffect(() => {
     if (user?.role === null) {
@@ -21,7 +19,7 @@ export default function App() {
   }, [user]);
 
   let mode = "none"; // Default mode
-  
+
   if (role === "student" || role === "representative") {
     mode = "vote"; // Set mode based on role
   }
@@ -35,11 +33,15 @@ export default function App() {
       }}
     >
       <Tab.Screen
+        name="Complaints"
+        component={ViewComplaints}
+      />
+      <Tab.Screen
         name="All Issues"
         component={() => <IssuesComponent mode={mode} />}
       />
-      <Tab.Screen name="Report Issue" component={ReportIssue} />
-      <Tab.Screen name="History" component={role==="student" ? IssueHistory : IssueHistoryRep} />
     </Tab.Navigator>
   );
 }
+
+export default IssuesCoordinator
