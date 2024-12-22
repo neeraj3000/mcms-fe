@@ -1,23 +1,28 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   StyleSheet,
   View,
   Text,
   Image,
-  FlatList,
-  Animated,
-  TouchableOpacity,
   ScrollView,
-  Alert,
-  Button,
+  Animated,
 } from "react-native";
 import * as Animatable from "react-native-animatable";
-import { sendNotificationsToAll } from "../../../backend/PushNotificationnew"; // Import the function to send notifications
+import { getMessMenu } from "@/backend/messmenunew";
 
 const StudentHomePage = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [messTimetable, setMessTimetable] = useState({});
 
   useEffect(() => {
+    // Fetch menu data
+    const fetchMenu = async () => {
+      const response = await getMessMenu();
+      setMessTimetable(response.menu || {});
+    };
+    fetchMenu();
+
+    // Animate header fade-in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1500,
@@ -25,85 +30,29 @@ const StudentHomePage = () => {
     }).start();
   }, [fadeAnim]);
 
-  const messTimetable = [
-    {
-      day: "Sunday",
-      breakfast: "1. Chapathi\n2. Alukurma\n3. Milk",
-      lunch:
-        "1. Veg Biryani Rice\n2. Chicken & Gutti Vankaya Curry\n3. Rytha\n4. Sambar\n5. Sweet",
-      evening_snacks: "1. Milk Biscuits (4)\n2. Tea",
-      dinner: "1. Rice\n2. Dosakaya Chutney\n3. Sambar\n4. Banana\n5. Curd",
-    },
-    {
-      day: "Monday",
-      breakfast: "1. Idly(4)\n2. Palli Chutney\n3. Boiled Egg\n4. Milk",
-      lunch:
-        "1. Rice\n2. Thotakura/Palakura Pappu\n3. Alu Fry\n4. Rasam\n5. Curd\n6. Banana",
-      dinner:
-        "1. Rice\n2. Vankaya Batani Curry\n3. Sambar\n4. Roti Chutney Cabbage\n5. Curd",
-    },
-    {
-      day: "Tuesday",
-      breakfast:
-        "1. Lemon/Tamarind Rice/Pongal\n2. Katta/Sambar\n3. Boiled Egg\n4. Milk",
-      lunch:
-        "1. Rice\n2. Tomoto Pappu\n3. Dondakaya Fry\n4. Rasam\n5. Curd\n6. Banana",
-      dinner:
-        "1. Rice\n2. Beerakaya Curry\n3. Sambar\n4. Tomoto Chutney\n5. Curd",
-    },
-    {
-      day: "Wednesday",
-      breakfast: "1. Upma/Semya Upma\n2. Palli/Putnala Chutney\n3. Milk",
-      lunch: "1. Rice\n2. Chicken & Paneer\n3. Sweet\n4. Banana\n5. Curd",
-      dinner:
-        "1. Rice\n2. Bendakaya Curry\n3. Sambar\n4. Mango Chutney\n5. Curd",
-    },
-    {
-      day: "Thursday",
-      breakfast: "1. Vada (3 No’s)\n2. Palli Chutney\n3. Boiled Egg\n4. Milk",
-      lunch:
-        "1. Rice\n2. Dosakaya Pappu\n3. Cabbage Fry\n4. Rasam\n5. Curd\n6. Banana",
-      dinner:
-        "1. Rice\n2. Chikkudukay/Beans Curry\n3. Sambar\n4. Lemon Pickle\n5. Curd",
-    },
-    {
-      day: "Friday",
-      breakfast: "1. Onion Uthappam\n2. Palli Chutney\n3. Boiled Egg\n4. Milk",
-      lunch:
-        "1. Rice\n2. Sorakaya Pesarapappu\n3. Beetroot/Carrot Fry\n4. Rasam\n5. Curd\n6. Banana",
-      dinner:
-        "1. Rice\n2. Alu Dum Fry\n3. Sambar\n4. Roti Chutney (Dondakaya)\n5. Curd",
-    },
-    {
-      day: "Saturday",
-      breakfast:
-        "1. Mysore Bajji (4)\n2. Palli Chutney\n3. Boiled Egg\n4. Milk",
-      lunch:
-        "1. Rice\n2. Mudda Pappu\n3. Pachi Pulusu\n4. Avakaya Pickle\n5. Papad\n6. Banana\n7. Curd",
-      evening_snacks: "1. Atukulu (Chuduva)\n2. Tea",
-      dinner:
-        "1. Rice\n2. Mixed Veg Fry (Alu+Carrot+Beans)\n3. Sambar\n4. Gongura Chutney\n5. Curd",
-    },
-  ];
-
   const today = new Date().toLocaleString("en-us", { weekday: "long" });
-  const todayMenu = messTimetable.find((item) => item.day === today);
+  const todayMenu = messTimetable[today];
 
-  const renderCard = (item) => (
+  const renderMeal = (title, meal) => (
+    <View style={styles.mealSection}>
+      <Text style={styles.cardMealTitle}>{title}:</Text>
+      <Text style={styles.cardMeal}>
+        {Array.isArray(meal)
+          ? meal.length
+            ? meal.join(", ")
+            : "Not available"
+          : meal || "Not available"}
+      </Text>
+    </View>
+  );
+
+  const renderCard = (menu) => (
     <Animatable.View animation="fadeInUp" style={styles.card}>
-      <Text style={styles.cardTitle}>{item.day}</Text>
-      <View style={styles.mealSection}>
-        <Text style={styles.cardMealTitle}>Breakfast:</Text>
-        <Text style={styles.cardMeal}>{item.breakfast}</Text>
-      </View>
-      <View style={styles.mealSection}>
-        <Text style={styles.cardMealTitle}>Lunch:</Text>
-        <Text style={styles.cardMeal}>{item.lunch}</Text>
-      </View>
-      <View style={styles.mealSection}>
-        <Text style={styles.cardMealTitle}>Dinner:</Text>
-        <Text style={styles.cardMeal}>{item.dinner}</Text>
-      </View>
+      <Text style={styles.cardTitle}>{menu.day}</Text>
+      {renderMeal("Breakfast", menu.breakfast)}
+      {renderMeal("Lunch", menu.lunch)}
+      {renderMeal("Snacks", menu.snacks)}
+      {renderMeal("Dinner", menu.dinner)}
     </Animatable.View>
   );
 
@@ -237,10 +186,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
-  notificationButtonContainer: {
-    marginTop: 20,
-    alignItems: "center",
-  },
+  // Same styles as provided
 });
 
 export default StudentHomePage;

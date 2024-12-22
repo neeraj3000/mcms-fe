@@ -10,6 +10,7 @@ import {
 import { useSession } from "../src/SessionContext"; // Import session context
 import CoordinatorHome from "../src/screens/Coordinator/Coordinator";
 import RequestInspections from "../src/screens/Coordinator/RequestInspections";
+import RequestFeedback from "../src/screens/Coordinator/RequestFeedback";
 import ReportTable from "../src/screens/Coordinator/Reports";
 import IssuesCoordinator from "../src/screens/Coordinator/IssuesCoordinator";
 
@@ -110,6 +111,15 @@ const AppNavigator = () => {
       <Drawer.Screen
         name="Request Inspections"
         component={RequestInspections}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="clipboard-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Request Feedback"
+        component={RequestFeedback}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />

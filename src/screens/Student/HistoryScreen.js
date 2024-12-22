@@ -16,8 +16,7 @@ import axios from "axios";
 import { useSession } from "../../SessionContext";
 import RefreshButton from "../../components/RefreshButton";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; 
-import {getIssuesByUserId} from "../../../backend/issuesnew"
-import {deleteIssue} from "../../../backend/issuesnew"
+import {deleteIssueById, getIssuesByUserId} from "../../../backend/issuesnew"
 import { updateIssue } from "../../../backend/issuesnew";
 
 const IssueHistory = () => {
@@ -71,10 +70,7 @@ const IssueHistory = () => {
 
   const handleSaveChanges = async () => {
     try {
-      const response = await axios.put(
-        `https://mcms-nseo.onrender.com/complaints/issues/${editedIssue.id}`,
-        editedIssue
-      );
+      const response = await updateIssue(selectedIssue.id, editedIssue);
       if (response.success) {
         setIssueHistory((prevIssues) =>
           prevIssues.map((issue) =>
@@ -111,7 +107,7 @@ const IssueHistory = () => {
 
   const deleteIssue = async (id) => {
     try {
-      const response = await deleteIssue(id)
+      const response = await deleteIssueById(id)
       if (response.success) {
         setIssueHistory((prevIssues) =>
           prevIssues.filter((issue) => issue.id !== id)

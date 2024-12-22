@@ -12,6 +12,7 @@ import {
   Timestamp,
   arrayUnion,
   arrayRemove,
+  writeBatch,
 } from "firebase/firestore";
 import { firestore } from "./firebase";
 

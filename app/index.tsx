@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
+import { NavigationContainer } from "@react-navigation/native";
 import { SessionProvider } from "../src/SessionContext";
+import * as SplashScreen from "expo-splash-screen";
+
 import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
 import StudentPage from "../app/StudentPage";
@@ -18,20 +21,27 @@ import { Text, View } from "react-native";
 const Stack = createStackNavigator();
 
 const App = () => {
-  const [token, setToken] = useState(null); // State to hold the token
+  const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
-    // const getToken = async () => {
-    //   const userId = 1; // Replace with the actual user ID
-    //   const category = "student"; // Replace with the actual category
-    //   const pushToken = await registerForPushNotificationsAsync(
-    //     userId,
-    //     category
-    //   );
-    //   setToken(pushToken); // Set the token in state
-    // };
-    // getToken(); // Call the function to get the token
+    async function prepareApp() {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+        // Perform any async setup tasks here
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+        await SplashScreen.hideAsync();
+      }
+    }
+
+    prepareApp();
   }, []);
+
+  if (!appIsReady) {
+    return null; // Optionally, you can return a loading spinner here
+  }
 
   return (
     <SessionProvider>

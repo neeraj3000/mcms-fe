@@ -11,6 +11,7 @@ import {
   addDoc,
   deleteDoc,
   Timestamp,
+  writeBatch,
 } from "firebase/firestore";
 import * as FileSystem from "expo-file-system";
 
@@ -164,10 +165,12 @@ async function getNextInspectionId() {
 // Create Inspection Reports
 // Create Inspection Reports
 // Create Inspection Reports
+// Create Inspection Reports
+// Create Inspection Reports
 export async function createInspectionReport(mrId, messNo, image, options) {
   try {
     const inspectionId = await getNextInspectionId();
-
+    console.log(typeof (mrId));
     let imageUrl = null;
     if (image) {
       try {
@@ -187,6 +190,7 @@ export async function createInspectionReport(mrId, messNo, image, options) {
 
     const currentDate = getCurrentDate(); // Use the current date as the inspection date
 
+    // Add inspection report to the Firestore
     const inspectionRef = collection(firestore, "InspectionReport");
     const newInspectionData = {
       inspectionId,
@@ -204,12 +208,48 @@ export async function createInspectionReport(mrId, messNo, image, options) {
 
     console.log("Inspection report created successfully:", inspectionDoc.id);
 
+    // Update the inspectionStatus field in the representative collection
+    const representativesRef = collection(firestore, "representative"); // Ensure the collection name is representative
+    const representativeQuery = query(
+      representativesRef,
+      where("mrId", "==", parseInt(mrId))
+    );
+    const representativeSnapshot = await getDocs(representativeQuery);
+
+    if (!representativeSnapshot.empty) {
+      console.log("Representatives found, preparing to update...");
+      const batch = writeBatch(firestore);
+
+      representativeSnapshot.docs.forEach((doc) => {
+        const representativeData = doc.data();
+        console.log(
+          `Updating inspectionStatus for document ID: ${doc.id}, representativeData`
+        );
+
+        // Check the current inspectionStatus and update if necessary
+        if (representativeData.inspectionStatus === true) {
+          batch.update(doc.ref, { inspectionStatus: false });
+        } else {
+          console.log(
+            `No update needed for document ID: ${doc.id}, inspectionStatus is already false.`
+          );
+        }
+      });
+
+      // Commit batch updates
+      await batch.commit();
+      console.log("Batch updates committed successfully for inspectionStatus.");
+    } else {
+      console.warn(`No representative found with mrId: ${mrId}`);
+    }
+
     return {
       success: true,
-      message: "Inspection report created successfully",
+      message:
+        "Inspection report created successfully and inspectionStatus updated.",
       inspectionDocId: inspectionDoc.id,
       inspectionId,
-      inspectionData: newInspectionData, // You can return the created report data as well
+      inspectionData: newInspectionData, // Return the created report data as well
     };
   } catch (err) {
     console.error("Error creating inspection report:", err);
