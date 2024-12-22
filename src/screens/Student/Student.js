@@ -65,15 +65,6 @@ const StudentHomePage = () => {
         />
         <Text style={styles.headerText}>Today's Menu</Text>
       </View>
-
-      <View style={styles.cardContainer}>
-        {todayMenu ? (
-          renderCard(todayMenu)
-        ) : (
-          <Text style={styles.noMenuText}>No menu available for today.</Text>
-        )}
-      </View>
-
       <View style={styles.quoteContainer}>
         <Text style={styles.quoteText}>
           "A good meal can change the course of your day."
@@ -81,6 +72,13 @@ const StudentHomePage = () => {
         <Text style={styles.quoteText}>
           "Food is the ingredient that binds us together."
         </Text>
+      </View>
+      <View style={styles.cardContainer}>
+        {todayMenu ? (
+          renderCard(todayMenu)
+        ) : (
+          <Text style={styles.noMenuText}>No menu available for today.</Text>
+        )}
       </View>
     </ScrollView>
   );

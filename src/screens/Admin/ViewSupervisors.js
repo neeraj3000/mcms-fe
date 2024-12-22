@@ -92,8 +92,12 @@ const ViewMessSupervisor = () => {
         onValueChange={(itemValue) => setSelectedMessId(itemValue)}
       >
         <Picker.Item label="Select a Mess" value={null} />
-        {messes.map((mess) => (
-          <Picker.Item key={mess.id} label={mess.name} value={mess.messId} />
+        {messes.map((mess, index) => (
+          <Picker.Item
+            key={mess.id || index} // Use mess.id if available, otherwise fallback to index
+            label={mess.name}
+            value={mess.messId}
+          />
         ))}
       </Picker>
 
@@ -106,8 +110,11 @@ const ViewMessSupervisor = () => {
       {/* List of supervisors */}
       {supervisors.length > 0 ? (
         <View>
-          {supervisors.map((supervisor) => (
-            <View key={supervisor.supervisorId} style={{ marginBottom: 10 }}>
+          {supervisors.map((supervisor, index) => (
+            <View
+              key={supervisor.supervisorId || index} // Use supervisor.supervisorId if available, otherwise fallback to index
+              style={{ marginBottom: 10 }}
+            >
               <Text>Name: {supervisor.name}</Text>
               <Text>Mobile: {supervisor.mobileNo}</Text>
               <Button

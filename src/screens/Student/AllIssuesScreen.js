@@ -14,28 +14,22 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 
-const IssueItem = React.memo(
-  ({ id, title, status, onResolve, onPress }) => {
-    return (
-      <View style={styles.issueItem}>
-        <TouchableOpacity onPress={onPress} style={styles.issueContent}>
-          <Text style={styles.issueTitle}>{title}</Text>
-          <Text style={styles.issueStatus}>{status}</Text>
+const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
+  return (
+    <View style={styles.issueItem}>
+      <TouchableOpacity onPress={onPress} style={styles.issueContent}>
+        <Text style={styles.issueTitle}>{title}</Text>
+        <Text style={styles.issueStatus}>{status}</Text>
+      </TouchableOpacity>
+      <View style={styles.resolveContainer}>
+        <TouchableOpacity onPress={onResolve}>
+          <Icon name="checkmark-circle-outline" size={24} color="#28a745" />
         </TouchableOpacity>
-        <View style={styles.resolveContainer}>
-          <TouchableOpacity onPress={onResolve}>
-            <Icon
-              name="checkmark-circle-outline"
-              size={24}
-              color="#28a745"
-            />
-          </TouchableOpacity>
-          <Text style={styles.resolveText}>Resolve</Text>
-        </View>
+        <Text style={styles.resolveText}>Resolve</Text>
       </View>
-    );
-  }
-);
+    </View>
+  );
+});
 
 const AllIssues = () => {
   const [issues, setIssues] = useState([]);
@@ -92,12 +86,15 @@ const AllIssues = () => {
     const updatedIssues = [...issues];
     updatedIssues[index].status = "Resolved"; // Change the issue status to 'Resolved'
     setIssues(updatedIssues);
-    
+
     // Optionally, make an API call to update the server with the new status
     try {
-      await axios.put(`https://mcms-nseo.onrender.com/complaints/issues/${id}`, {
-        status: "Resolved",
-      });
+      await axios.put(
+        `https://mcms-nseo.onrender.com/complaints/issues/${id}`,
+        {
+          status: "Resolved",
+        }
+      );
     } catch (error) {
       console.error("Error updating issue status:", error);
       Alert.alert("Error", "Failed to update the issue status.");
@@ -116,7 +113,6 @@ const AllIssues = () => {
 
   return (
     <View style={styles.container}>
-     
       <Text style={styles.title}>All Issues</Text>
 
       {/* FlatList for issues */}
@@ -124,7 +120,7 @@ const AllIssues = () => {
         data={issues}
         renderItem={({ item, index }) => (
           <IssueItem
-            key={item.issueId}
+            key={item.issueId.toString()} // Ensure each item has a unique key
             id={item.issueId}
             title={item.description}
             status={item.status}
@@ -132,7 +128,7 @@ const AllIssues = () => {
             onPress={() => openIssueModal(item)} // Open modal on press
           />
         )}
-        keyExtractor={(item) => item.issueId.toString()}
+        keyExtractor={(item) => item.issueId.toString()} // Ensure each item has a unique key
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         ListFooterComponent={

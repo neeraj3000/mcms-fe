@@ -216,13 +216,8 @@ const IssuesComponent = ({ mode = "none" }) => {
 
             {mode === "none" && (
               <View style={styles.voteContainerNone}>
-                <Text
-                  style={[
-                    styles.voteTextRight,
-                    { color: colors.primary },
-                  ]}
-                >
-                  🚀 {votes[item.id]?.upvotes || 0} / 💥{" "}
+                <Text style={[styles.voteTextRight, { color: colors.primary }]}>
+                  🚀 {votes[item.id]?.upvotes || 0}   💥{" "}
                   {votes[item.id]?.downvotes || 0}
                 </Text>
               </View>
@@ -233,7 +228,9 @@ const IssuesComponent = ({ mode = "none" }) => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
-          loading ? <ActivityIndicator size="large" color={colors.primary} /> : null
+          loading ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : null
         }
       />
 
@@ -255,6 +252,10 @@ const IssuesComponent = ({ mode = "none" }) => {
                 <Text style={styles.modalText}>
                   <Text style={styles.modalLabel}>Description:</Text>{" "}
                   {selectedIssue.description}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Mess No:</Text>{" "}
+                  {selectedIssue.messNo}
                 </Text>
                 {selectedIssue.image ? (
                   <Image

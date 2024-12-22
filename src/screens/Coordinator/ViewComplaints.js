@@ -212,6 +212,10 @@ const ViewComplaints = () => {
                     {selectedIssue.description}
                   </Text>
                   <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Mess No: </Text>
+                    {selectedIssue.messNo}
+                  </Text>
+                  <Text style={styles.modalContent}>
                     <Text style={styles.modalSubTitle}>Status: </Text>
                     {selectedIssue.status}
                   </Text>

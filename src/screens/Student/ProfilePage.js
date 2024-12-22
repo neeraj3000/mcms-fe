@@ -1,10 +1,18 @@
 // ProfilePage.js
 
-import { View, Text, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 import React, { useState, useEffect } from "react";
 import { useSession } from "@/src/SessionContext"; // Assuming you have a SessionContext for managing user
 import { getStudentById } from "../../../backend/studentnew"; // Assuming this function exists
 import { useNavigation } from "@react-navigation/native"; // For navigation to login screen
+import Icon from "react-native-vector-icons/AntDesign"; // Importing AntDesign for the edit icon
 
 const ProfilePage = () => {
   const { user } = useSession(); // Get user info from session context
@@ -57,12 +65,21 @@ const ProfilePage = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
+      <Text style={styles.title}>Your Profile</Text>
       {studentProfile ? (
-        <View style={styles.profileInfo}>
-          <Text style={styles.infoText}>
-            <Text style={styles.bold}>Name:</Text> {studentProfile.name}
-          </Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate("EditProfile")}
+          >
+            <Icon name="edit" size={24} color="#007bff" />
+          </TouchableOpacity>
+
+          <Image
+            source={require("../../../assets/images/profile.jpg")}
+            style={styles.profileImage}
+          />
+          <Text style={styles.name}>{studentProfile.name}</Text>
           <Text style={styles.infoText}>
             <Text style={styles.bold}>College ID:</Text>{" "}
             {studentProfile.collegeId}
@@ -90,7 +107,9 @@ const ProfilePage = () => {
           </Text>
         </View>
       ) : (
-        <Text>No profile information available.</Text>
+        <Text style={styles.noProfileText}>
+          No profile information available.
+        </Text>
       )}
     </View>
   );
@@ -100,22 +119,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#f4f7fc", // Soft background color
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 20,
+    color: "#333",
+    marginBottom: 30,
+    textAlign: "center",
   },
-  profileInfo: {
-    marginTop: 10,
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+    alignItems: "center",
+    marginBottom: 20,
+    position: "relative", // To position the edit button on top right
+  },
+  editButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    padding: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.7)", // Slight background to make it stand out
+    borderRadius: 50,
+    elevation: 3,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: "#007bff",
+  },
+  name: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
   },
   infoText: {
     fontSize: 18,
-    marginBottom: 10,
+    marginBottom: 12,
+    color: "#555",
   },
   bold: {
     fontWeight: "bold",
+    color: "#007bff",
   },
   centered: {
     flex: 1,
@@ -125,6 +181,13 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     fontSize: 18,
+    marginBottom: 20,
+  },
+  noProfileText: {
+    fontSize: 18,
+    color: "#777",
+    textAlign: "center",
+    marginTop: 20,
   },
 });
 

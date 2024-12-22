@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, Alert, ScrollView } from "react-native";
-import { Button, TextInput, ActivityIndicator } from "react-native-paper";
+import {
+  View,
+  StyleSheet,
+  Text,
+  Alert,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import { Button, ActivityIndicator } from "react-native-paper";
+import MultiSelect from "react-native-multiple-select";
 import {
   initializeMessMenu,
   getMessMenu,
   updateDayMenu,
-} from "../../../backend/messmenunew"; // Adjust path accordingly
+} from "../../../backend/messmenunew";
+import { MaterialCommunityIcons } from "react-native-vector-icons"; // Import the icon library
 
 const daysOrder = [
   "Monday",
@@ -17,32 +27,86 @@ const daysOrder = [
   "Sunday",
 ];
 
+const meals = {
+  breakfast: [
+    "Idly(4)",
+    "Palli Chutney",
+    "Boiled Egg",
+    "Milk",
+    "Lemon/Tamarind Rice/Pongal",
+    "Katta/Sambar",
+    "Upma/Semya Upma",
+    "Palli/Putnala Chutney",
+    "Onion Uthappam",
+    "Mysore Bajji (4)",
+    "Chapathi",
+    "Alukurma",
+  ],
+  lunch: [
+    "Rice",
+    "Thotakura/Palakura Pappu",
+    "Alu Fry",
+    "Rasam",
+    "Curd",
+    "Banana",
+    "Tomoto Pappu",
+    "Dondakaya Fry",
+    "Beerakaya Curry",
+    "Sweet",
+    "Chicken & Paneer",
+    "Bendakaya Curry",
+    "Mudda Pappu",
+    "Pachi Pulusu",
+    "Avakaya Pickle",
+    "Papad",
+    "Mixed Veg Fry (Alu+Carrot+Beans)",
+    "Veg Biryani Rice",
+    "Chicken & Gutti Vankaya Curry",
+  ],
+  snacks: ["Palli Chutney", "Tea", "Atukulu (Chuduva)", "Milk Biscuits (4)"],
+  dinner: [
+    "Rice",
+    "Vankaya Batani Curry",
+    "Sambar",
+    "Roti",
+    "Chutney",
+    "Cabbage",
+    "Chikkudukay/Beans Curry",
+    "Tomoto Chutney",
+    "Alu Dum Fry",
+    "Mixed Veg Fry",
+    "Gongura Chutney",
+    "Dosakaya Chutney",
+  ],
+};
+
 const MessMenuPage = () => {
   const [menu, setMenu] = useState(null);
   const [loading, setLoading] = useState(false);
   const [foodDetails, setFoodDetails] = useState({});
+  const [newItem, setNewItem] = useState({
+    breakfast: "",
+    lunch: "",
+    snacks: "",
+    dinner: "",
+  });
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log("Fetching mess menu...");
     fetchMessMenu();
   }, []);
 
   const fetchMessMenu = async () => {
     setLoading(true);
     try {
-      console.log("Calling getMessMenu...");
       const { success, menu, error } = await getMessMenu();
       if (success && menu) {
-        console.log("Menu fetched successfully:", menu);
         setMenu(menu);
         setFoodDetails(getInitialFoodDetails(menu));
       } else {
-        console.log("Menu does not exist, initializing...");
         handleInitializeMenu();
       }
     } catch (err) {
-      console.error("Error while fetching menu:", err);
       setError(err.message || "Error fetching menu");
     }
     setLoading(false);
@@ -51,18 +115,7 @@ const MessMenuPage = () => {
   const getInitialFoodDetails = (menu) => {
     const initialDetails = {};
     Object.keys(menu).forEach((day) => {
-      initialDetails[day] = {
-        breakfast: Array.isArray(menu[day].breakfast)
-          ? menu[day].breakfast.join(", ") // Convert array to string for display
-          : "",
-        lunch: Array.isArray(menu[day].lunch) ? menu[day].lunch.join(", ") : "",
-        snacks: Array.isArray(menu[day].snacks)
-          ? menu[day].snacks.join(", ")
-          : "",
-        dinner: Array.isArray(menu[day].dinner)
-          ? menu[day].dinner.join(", ")
-          : "",
-      };
+      initialDetails[day] = { ...menu[day] };
     });
     return initialDetails;
   };
@@ -70,18 +123,14 @@ const MessMenuPage = () => {
   const handleInitializeMenu = async () => {
     setLoading(true);
     try {
-      console.log("Initializing mess menu...");
       const { success, message, error } = await initializeMessMenu();
       if (success) {
-        console.log("Mess menu initialized successfully:", message);
         Alert.alert("Success", message);
         fetchMessMenu();
       } else {
-        console.error("Error initializing menu:", error);
         setError(error || "Error initializing menu");
       }
     } catch (err) {
-      console.error("Error while initializing menu:", err);
       setError(err.message || "Error initializing menu");
     }
     setLoading(false);
@@ -89,144 +138,168 @@ const MessMenuPage = () => {
 
   const handleUpdateDayMenu = async (day) => {
     setLoading(true);
-    console.log(`Updating menu for ${day}...`);
     try {
-      // Convert string input back to array
-      const updatedMenu = {
-        breakfast: foodDetails[day]?.breakfast
-          .split(",")
-          .map((item) => item.trim()),
-        lunch: foodDetails[day]?.lunch.split(",").map((item) => item.trim()),
-        snacks: foodDetails[day]?.snacks.split(",").map((item) => item.trim()),
-        dinner: foodDetails[day]?.dinner.split(",").map((item) => item.trim()),
-      };
-
+      const updatedMenu = foodDetails[day];
       const { success, message, error } = await updateDayMenu(day, updatedMenu);
       if (success) {
-        console.log(`Menu for ${day} updated successfully:`, message);
         Alert.alert("Success", message);
         fetchMessMenu();
       } else {
-        console.error(`Error updating menu for ${day}:`, error);
         setError(error || `Error updating menu for ${day}`);
       }
     } catch (err) {
-      console.error(`Error while updating menu for ${day}:`, err);
       setError(err.message || `Error updating menu for ${day}`);
     }
     setLoading(false);
   };
 
-  // Sorting the menu by day order
-  const sortedMenu = menu
-    ? Object.keys(menu).sort((a, b) => {
-        return daysOrder.indexOf(a) - daysOrder.indexOf(b);
-      })
-    : [];
+  const handleAddItem = (mealType, day) => {
+    if (newItem[mealType]) {
+      setFoodDetails({
+        ...foodDetails,
+        [day]: {
+          ...foodDetails[day],
+          [mealType]: [...foodDetails[day][mealType], newItem[mealType]],
+        },
+      });
+      setNewItem({ ...newItem, [mealType]: "" });
+    } else {
+      Alert.alert("Error", "Please enter a valid item");
+    }
+  };
+
+  const handleRemoveItem = (mealType, day, itemToRemove) => {
+    const updatedItems = foodDetails[day][mealType].filter(
+      (item) => item !== itemToRemove
+    );
+    setFoodDetails({
+      ...foodDetails,
+      [day]: {
+        ...foodDetails[day],
+        [mealType]: updatedItems,
+      },
+    });
+  };
+
+  const renderMenuItem = ({ item: day }) => (
+    <View style={styles.menuDay}>
+      <Text style={styles.dayHeader}>{day}</Text>
+      {["breakfast", "lunch", "snacks", "dinner"].map((mealType) => (
+        <View key={mealType} style={styles.mealContainer}>
+          <Text style={styles.mealType}>
+            {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+          </Text>
+          <MultiSelect
+            items={meals[mealType].map((item) => ({ id: item, name: item }))}
+            uniqueKey="id"
+            onSelectedItemsChange={(selectedItems) => {
+              setFoodDetails({
+                ...foodDetails,
+                [day]: { ...foodDetails[day], [mealType]: selectedItems },
+              });
+            }}
+            selectedItems={foodDetails[day]?.[mealType] || []}
+            selectText={`Select ${
+              mealType.charAt(0).toUpperCase() + mealType.slice(1)
+            }`}
+            searchInputPlaceholderText={`Search for ${mealType}`}
+          />
+          <View style={styles.addItemContainer}>
+            <TextInput
+              style={styles.input}
+              value={newItem[mealType]}
+              onChangeText={(text) =>
+                setNewItem({ ...newItem, [mealType]: text })
+              }
+              placeholder={`Add new ${mealType} item`}
+            />
+            <Button
+              mode="contained"
+              onPress={() => handleAddItem(mealType, day)}
+              style={styles.addButton}
+            >
+              Add
+            </Button>
+          </View>
+
+          {/* Display added items with remove option */}
+          <View style={styles.addedItemsContainer}>
+            {foodDetails[day]?.[mealType]?.map((item, index) => (
+              <View key={index} style={styles.addedItemRow}>
+                <Text style={styles.addedItem}>{item}</Text>
+                <TouchableOpacity
+                  onPress={() => handleRemoveItem(mealType, day, item)}
+                >
+                  <MaterialCommunityIcons
+                    name="close-circle"
+                    size={20}
+                    color="red"
+                    style={styles.removeItemIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </View>
+      ))}
+      <Button
+        mode="contained"
+        onPress={() => handleUpdateDayMenu(day)}
+        style={styles.button}
+      >
+        Update Menu for {day}
+      </Button>
+    </View>
+  );
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>Mess Menu</Text>
-      {loading ? (
-        <ActivityIndicator animating={true} size="large" color="#6200ea" />
-      ) : (
-        <View>
-          {menu ? (
-            <>
-              <Button
-                mode="contained"
-                onPress={() => handleUpdateDayMenu("all")}
-                style={[styles.button, styles.updateButton]}
-                disabled={loading}
-              >
-                Update All Menus
-              </Button>
-              {sortedMenu.map((day) => (
-                <View key={day} style={styles.menuDay}>
-                  <Text style={styles.dayHeader}>{day}</Text>
-                  <View style={styles.menuDetails}>
-                    <TextInput
-                      label="Breakfast"
-                      value={foodDetails[day]?.breakfast || ""}
-                      onChangeText={(text) =>
-                        setFoodDetails({
-                          ...foodDetails,
-                          [day]: { ...foodDetails[day], breakfast: text },
-                        })
-                      }
-                      style={styles.textInput}
-                    />
-                    <TextInput
-                      label="Lunch"
-                      value={foodDetails[day]?.lunch || ""}
-                      onChangeText={(text) =>
-                        setFoodDetails({
-                          ...foodDetails,
-                          [day]: { ...foodDetails[day], lunch: text },
-                        })
-                      }
-                      style={styles.textInput}
-                    />
-                    <TextInput
-                      label="Snacks"
-                      value={foodDetails[day]?.snacks || ""}
-                      onChangeText={(text) =>
-                        setFoodDetails({
-                          ...foodDetails,
-                          [day]: { ...foodDetails[day], snacks: text },
-                        })
-                      }
-                      style={styles.textInput}
-                    />
-                    <TextInput
-                      label="Dinner"
-                      value={foodDetails[day]?.dinner || ""}
-                      onChangeText={(text) =>
-                        setFoodDetails({
-                          ...foodDetails,
-                          [day]: { ...foodDetails[day], dinner: text },
-                        })
-                      }
-                      style={styles.textInput}
-                    />
-                    <Button
-                      mode="contained"
-                      onPress={() => handleUpdateDayMenu(day)}
-                      style={styles.button}
-                    >
-                      Update Menu for {day}
-                    </Button>
-                  </View>
-                </View>
-              ))}
-            </>
-          ) : (
-            <Text>No menu available, initializing...</Text>
-          )}
-        </View>
-      )}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </ScrollView>
+    <FlatList
+      data={
+        menu
+          ? Object.keys(menu).sort(
+              (a, b) => daysOrder.indexOf(a) - daysOrder.indexOf(b)
+            )
+          : []
+      }
+      renderItem={renderMenuItem}
+      keyExtractor={(item) => item}
+      ListEmptyComponent={
+        loading ? (
+          <ActivityIndicator animating={true} size="large" color="#6200ea" />
+        ) : (
+          <Text>No menu available, initializing...</Text>
+        )
+      }
+      contentContainerStyle={styles.container}
+      style={{ flex: 1 }}
+    />
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
     backgroundColor: "#fff",
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#6200ea",
-    marginBottom: 20,
   },
   button: {
     marginVertical: 10,
   },
-  updateButton: {
-    backgroundColor: "#007bff", // Blue theme
+  input: {
+    borderWidth: 1,
+    borderColor: "#6200ea",
+    borderRadius: 4,
+    padding: 8,
+    marginRight: 10, // Space between input and button
+    flex: 1, // Ensure the input takes up available space
+  },
+  addItemContainer: {
+    flexDirection: "row", // Align input and button side by side
+    alignItems: "center", // Vertically center the items
+    marginBottom: 10,
+  },
+  addButton: {
+    flexShrink: 0, // Prevent the button from shrinking
   },
   menuDay: {
     marginVertical: 15,
@@ -236,16 +309,29 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
-  menuDetails: {
-    marginTop: 20,
+  mealContainer: {
+    marginBottom: 20,
   },
-  textInput: {
-    marginBottom: 10,
+  mealType: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
   },
-  errorText: {
-    color: "red",
-    textAlign: "center",
-    marginTop: 20,
+  addedItemsContainer: {
+    marginTop: 10,
+  },
+  addedItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  addedItem: {
+    fontSize: 14,
+    color: "#6200ea",
+    marginRight: 10, // Space between item and icon
+  },
+  removeItemIcon: {
+    marginLeft: 5, // Space between item and icon
   },
 });
 
