@@ -13,9 +13,18 @@ import {
 import { firestore } from "./firebase"; // Import Firestore instance
 
 // Add PushNotification Token
+// import { doc, getDoc, setDoc } from "firebase/firestore";
+
 export async function addPushNotificationToken(userId, token, role) {
   try {
-    console.log("called here");
+    // Convert all inputs to strings
+    userId = String(userId);
+    token = String(token);
+    role = String(role);
+
+    console.log("Called here with:", { userId, token, role });
+
+    // Check for missing fields
     if (!userId || !token || !role) {
       return {
         success: false,
@@ -23,25 +32,43 @@ export async function addPushNotificationToken(userId, token, role) {
       };
     }
 
-    const notificationRef = doc(firestore, "PushNotification", userId); // Use userId as the document ID
+    const notificationRef = doc(firestore, "PushNotification", userId);
     const docSnapshot = await getDoc(notificationRef);
 
     if (docSnapshot.exists()) {
+      console.log("Document already exists:", docSnapshot.data());
       return {
-        success: false,
-        message:
-          "Document already exists. Use the update function to modify it.",
+        success: true,
+        message: "Document already exists.",
+        data: docSnapshot.data(),
+        reference: notificationRef,
       };
     }
-    console.log({ userId, token, role });
+
+    console.log("Creating new document...");
     await setDoc(notificationRef, { userId, token, role });
     return {
       success: true,
       message: "Push notification token added successfully.",
+      reference: notificationRef,
     };
   } catch (err) {
-    console.error("Error adding push notification token:", err);
-    return { success: false, error: err.message };
+    console.error("Detailed error:", err);
+
+    if (err.message.includes("indexOf is not a function")) {
+      return {
+        success: false,
+        message:
+          "An internal error occurred while processing the data. Check the input fields.",
+        error: err.message,
+      };
+    }
+
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+      error: err.message,
+    };
   }
 }
 
@@ -161,5 +188,57 @@ export async function getAllPushNotificationTokens() {
   } catch (err) {
     console.error("Error fetching all push notification tokens:", err);
     return { success: false, error: err.message };
+  }
+}
+import * as Notifications from "expo-notifications";
+// import { firestore } from "../../backend/firebase"; // Firebase setup
+// import { collection, getDocs } from "firebase/firestore"; // Firebase Firestore functions
+
+// Function to send a push notification to a single token
+async function sendPushNotification(token, message) {
+  const messagePayload = {
+    to: token,
+    sound: "default",
+    title: "New Notification",
+    body: message,
+    data: { extraData: "Some extra data" },
+  };
+
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: messagePayload.title,
+        body: messagePayload.body,
+      },
+      trigger: null, // To send immediately
+    });
+    console.log(`Notification sent to ${token}`);
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+}
+
+// Function to send notifications to all users from the Firestore collection
+export async function sendNotificationsToAll() {
+  try {
+    // Fetch all documents from the PushNotification collection
+    const querySnapshot = await getDocs(
+      collection(firestore, "PushNotification")
+    );
+
+    // Loop through all documents and send notifications
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const token = data.token; // The token of the user
+
+      if (token) {
+        // Send push notification to this token
+        sendPushNotification(token, "This is a notification for all users!");
+      } else {
+        console.warn("No token found for user:", doc.id);
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching tokens:", error);
   }
 }

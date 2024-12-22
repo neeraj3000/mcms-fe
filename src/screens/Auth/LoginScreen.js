@@ -6,80 +6,77 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
 import { useSession } from "../../SessionContext"; // Import context
 import { loginUser } from "../../../backend/authnew";
-// import {registerForPushNotificationsAsync} from "../../utils/registerNotifications"
+import { registerForPushNotificationsAsync } from "../../utils/registerNotifications";
+
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useSession(); // Access the login function from context
-  const fetchLogin = async () => {
+
+  // Handle user login
+  const handleLogin = async () => {
     try {
-      const response = await loginUser( email, password );
-      if (response.success) {
-        return response.user;
-      } else {
-        return null;
+      // Validate email and password
+      if (!email || !password) {
+        Alert.alert("Error", "Please fill in both email and password.");
+        return;
+      }
+
+      // Fetch login response
+      const response = await loginUser(email, password);
+
+      if (!response.success) {
+        Alert.alert("Error", "Invalid email or password.");
+        return;
+      }
+
+      const user = response.user;
+
+      // Save the session details
+      login({
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        id: user.userId, // Store the userId
+      });
+
+      // Register for push notifications
+      await registerForPushNotificationsAsync(user.userId, user.role)
+        .then((token) => console.log("Push notification token:", token))
+        .catch((err) =>
+          console.error("Error during push notification registration:", err)
+        );
+
+      // Navigate based on user role
+      switch (user.role) {
+        case "student":
+          navigation.replace("StudentPage");
+          break;
+        case "representative":
+          navigation.replace("MRPage");
+          break;
+        case "admin":
+          navigation.replace("Admin");
+          break;
+        case "coordinator":
+          navigation.replace("Coordinator");
+          break;
+        case "mess_supervisor":
+          navigation.replace("Supervisor");
+          break;
+        case "authority":
+          navigation.replace("Authority");
+          break;
+        default:
+          Alert.alert("Error", "Invalid role. Contact support.");
       }
     } catch (error) {
-      console.error("Login fconsoleailed:", error);
-      return null;
-    }
-  };
-
-  const handleLogin = async () => {
-    const user = await fetchLogin();
-    if (email === "director@gmail.com" && password === "password") {
-      login("director");
-      navigation.replace("Director");
-    } else {
-      if (!user) {
-        alert("Invalid email or password");
-      } else {
-        // alert(user.userId);
-        // Save the session details using login function
-        login({
-          email: user.email,
-          role: user.role,
-          name: user.name,
-          id: user.userId, // This is where you store the userId
-        });
-        // await registerForPushNotificationsAsync(user.userId, user.role);
-        // const { sendNotificationToUser } = require("../../../backend/pushNotifications");
-        // // Replace with the actual user ID
-        // const message = "Hello, this is a personalized notification!";
-
-        // sendNotificationToUser(user.userId, message)
-        //   .then(() => {
-        //     console.log("Notification sent successfully!");
-        //   })
-        //   .catch((error) => {
-        //     console.error("Error sending notification:", error);
-        //   });
-
-    // Navigate based on user role
-
-        switch (user.role) {
-          case "student":
-            navigation.replace("StudentPage");
-            break;
-          case "representative":
-            navigation.replace("MRPage");
-            break;
-          case "admin":
-            navigation.replace("Admin");
-            break;
-          case "coordinator":
-            navigation.replace("Coordinator");
-            break;
-          case "mess_supervisor":
-            navigation.replace("Supervisor");
-            break;
-          default:
-            alert("Invalid role");
-        }
-      }
+      console.error("Login failed:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
     }
   };
 
@@ -102,6 +99,8 @@ const LoginPage = ({ navigation }) => {
           placeholder="Email"
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
         <TextInput
           style={styles.input}
@@ -116,7 +115,10 @@ const LoginPage = ({ navigation }) => {
         <View style={styles.linksContainer}>
           <TouchableOpacity
             onPress={() =>
-              alert("Forgot Password functionality not implemented")
+              Alert.alert(
+                "Info",
+                "Forgot Password functionality not implemented."
+              )
             }
           >
             <Text style={styles.linkText}>Forgot Password</Text>

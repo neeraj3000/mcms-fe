@@ -1,214 +1,145 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
 import { PieChart, BarChart } from "react-native-chart-kit";
-import { Button, Menu, Provider } from "react-native-paper";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { getAllInspectionReports } from "../../../backend/inspectionnew"; // Adjust API import path
 
 const screenWidth = Dimensions.get("window").width;
 
-// Categories for inspection reports
-const categories = [
-  "Cleanliness",
-  "SafetyStandards",
-  "EquipmentMaintenance",
-  "FirePreparedness",
-  "StaffTraining",
-  "EmergencyExits",
-  "StorageSafety",
-  "OverallScore",
-];
-
 const InspectionReportScreen = () => {
-  const [selectedCategory, setSelectedCategory] = useState("Cleanliness");
   const [inspectionData, setInspectionData] = useState({
-    locationReports: [],
-    timeReports: [],
+    reports: [],
+    messCount: {},
+    dateCount: {},
+    optionsCount: {},
   });
 
-  const [menuVisible, setMenuVisible] = useState(false);
-
   useEffect(() => {
-    // Simulated backend data fetch
     const fetchData = async () => {
-      const data = {
-        locationReports: [
-          { name: "Building A", Cleanliness: 85, SafetyStandards: 90 },
-          { name: "Building B", Cleanliness: 78, SafetyStandards: 88 },
-          { name: "Building C", Cleanliness: 92, SafetyStandards: 95 },
-        ],
-        timeReports: [
-          { label: "Jan-Feb", Cleanliness: 80, SafetyStandards: 85 },
-          { label: "Feb-Mar", Cleanliness: 88, SafetyStandards: 87 },
-        ],
-      };
-      setInspectionData(data);
+      try {
+        const reportResponse = await getAllInspectionReports();
+        if (reportResponse.success) {
+          const reports = reportResponse.inspectionReports;
+
+          const messCount = {};
+          const dateCount = {};
+          const optionsCount = {};
+
+          reports.forEach((report) => {
+            // Counting by messNo
+            messCount[report.messNo] = (messCount[report.messNo] || 0) + 1;
+
+            // Counting by inspectionDate
+            dateCount[report.inspectionDate] =
+              (dateCount[report.inspectionDate] || 0) + 1;
+
+            // Counting by options (checking if options exists and is an array)
+            if (Array.isArray(report.options)) {
+              report.options.forEach((option) => {
+                optionsCount[option] = (optionsCount[option] || 0) + 1;
+              });
+            } else {
+              // Handle the case when options is not an array or is undefined
+              console.warn(
+                `Options not available for inspection report ${report.inspectionId}`
+              );
+            }
+          });
+
+          setInspectionData({
+            reports,
+            messCount,
+            dateCount,
+            optionsCount,
+          });
+        } else {
+          console.error(
+            "Failed to fetch inspection reports:",
+            reportResponse.message
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
     };
 
     fetchData();
   }, []);
 
-  // Prepare Pie Chart Data for Location Reports
-  const pieDataLocation = inspectionData.locationReports.map((item, index) => ({
-    name: item.name,
-    population: item[selectedCategory] || 0,
-    color: ["#007BFF", "#28A745", "#FFC107"][index],
+  // Prepare Pie Chart Data for Mess Distribution
+  const pieDataMess = Object.keys(inspectionData.messCount).map((messNo) => ({
+    name: `Mess ${messNo}`,
+    population: inspectionData.messCount[messNo],
+    color: ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#FFC300"][
+      Object.keys(inspectionData.messCount).indexOf(messNo) % 5
+    ],
     legendFontColor: "#000",
     legendFontSize: 12,
   }));
 
-  // Prepare Pie Chart Data for Time Reports
-  const pieDataTime = inspectionData.timeReports.map((item, index) => ({
-    name: item.label,
-    population: item[selectedCategory] || 0,
-    color: ["#007BFF", "#28A745", "#FFC107", "#DC3545"][index],
-    legendFontColor: "#000",
-    legendFontSize: 12,
-  }));
+  // Prepare Pie Chart Data for Options Distribution
+  const pieDataOptions = Object.keys(inspectionData.optionsCount).map(
+    (option) => ({
+      name: option,
+      population: inspectionData.optionsCount[option],
+      color: ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#C70039", "#900C3F"][
+        Object.keys(inspectionData.optionsCount).indexOf(option) % 6
+      ],
+      legendFontColor: "#000",
+      legendFontSize: 12,
+    })
+  );
 
-  // Prepare Bar Chart Data for Location Reports
-  const barDataLocation = {
-    labels: inspectionData.locationReports.map((item) => item.name),
+  // Prepare Bar Chart Data for Reports by Date
+  const barDataDate = {
+    labels: Object.keys(inspectionData.dateCount),
     datasets: [
       {
-        data: inspectionData.locationReports.map(
-          (item) => item[selectedCategory] || 0
-        ),
+        data: Object.values(inspectionData.dateCount),
       },
     ],
   };
-
-  // Prepare Bar Chart Data for Time Reports
-  const barDataTime = {
-    labels: inspectionData.timeReports.map((item) => item.label),
-    datasets: [
-      {
-        data: inspectionData.timeReports.map(
-          (item) => item[selectedCategory] || 0
-        ),
-      },
-    ],
-  };
-
-  // Tab Routes
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: "location", title: "Reports by Location" },
-    { key: "time", title: "Reports by Time Period" },
-  ]);
-
-  // Tab Scenes
-  const renderScene = SceneMap({
-    location: () => (
-      <ScrollView>
-        {/* Pie Chart for Reports by Location */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} by Location (Pie Chart)
-        </Text>
-        <PieChart
-          data={pieDataLocation}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor={"population"}
-          backgroundColor={"transparent"}
-          paddingLeft={"15"}
-          absolute
-        />
-
-        {/* Bar Chart for Reports by Location */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} by Location (Bar Chart)
-        </Text>
-        <BarChart
-          data={barDataLocation}
-          width={screenWidth - 32}
-          height={220}
-          yAxisLabel=""
-          chartConfig={chartConfig}
-          verticalLabelRotation={30}
-        />
-      </ScrollView>
-    ),
-    time: () => (
-      <ScrollView>
-        {/* Pie Chart for Reports Over Time */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} Over Time (Pie Chart)
-        </Text>
-        <PieChart
-          data={pieDataTime}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor={"population"}
-          backgroundColor={"transparent"}
-          paddingLeft={"15"}
-          absolute
-        />
-
-        {/* Bar Chart for Reports Over Time */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} Over Time (Bar Chart)
-        </Text>
-        <BarChart
-          data={barDataTime}
-          width={screenWidth - 32}
-          height={220}
-          yAxisLabel=""
-          chartConfig={chartConfig}
-          verticalLabelRotation={30}
-        />
-      </ScrollView>
-    ),
-  });
 
   return (
-    <Provider>
-      <View style={styles.container}>
-        <Text style={styles.title}>Inspection Reports Dashboard</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Inspection Reports Statistical Analysis</Text>
 
-        {/* Category Filter */}
-        <View style={styles.filterContainer}>
-          <Text style={styles.label}>Select Category: </Text>
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <Button mode="outlined" onPress={() => setMenuVisible(true)}>
-                {selectedCategory}
-              </Button>
-            }
-          >
-            {categories.map((category) => (
-              <Menu.Item
-                key={category}
-                title={category}
-                onPress={() => {
-                  setSelectedCategory(category);
-                  setMenuVisible(false);
-                }}
-              />
-            ))}
-          </Menu>
-        </View>
+      {/* Pie Chart for Reports by Mess */}
+      <Text style={styles.chartTitle}>Reports by Mess</Text>
+      <PieChart
+        data={pieDataMess}
+        width={screenWidth - 32}
+        height={220}
+        chartConfig={chartConfig}
+        accessor={"population"}
+        backgroundColor={"transparent"}
+        paddingLeft={"15"}
+        absolute
+      />
 
-        {/* Tabs */}
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: screenWidth }}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              indicatorStyle={{ backgroundColor: "blue" }}
-              style={{ backgroundColor: "blue" }}
-              labelStyle={{ color: "blue" }}
-            />
-          )}
-        />
-      </View>
-    </Provider>
+      {/* Bar Chart for Reports by Date */}
+      <Text style={styles.chartTitle}>Reports by Date</Text>
+      <BarChart
+        data={barDataDate}
+        width={screenWidth - 32}
+        height={220}
+        yAxisLabel=""
+        chartConfig={chartConfig}
+        verticalLabelRotation={30}
+      />
+
+      {/* Pie Chart for Distribution of Options */}
+      <Text style={styles.chartTitle}>Reports by Inspection Options</Text>
+      <PieChart
+        data={pieDataOptions}
+        width={screenWidth - 32}
+        height={220}
+        chartConfig={chartConfig}
+        accessor={"population"}
+        backgroundColor={"transparent"}
+        paddingLeft={"15"}
+        absolute
+      />
+    </ScrollView>
   );
 };
 
@@ -228,22 +159,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f4f4f4",
     paddingTop: 16,
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 16,
-  },
-  filterContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 8,
-  },
-  label: {
-    fontSize: 16,
-    marginRight: 8,
   },
   chartTitle: {
     fontSize: 18,

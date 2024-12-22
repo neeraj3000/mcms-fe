@@ -56,6 +56,17 @@ const StudentHomePage = () => {
     </Animatable.View>
   );
 
+  // Function to handle sending notifications
+  const handleSendNotifications = async () => {
+    try {
+      await sendNotificationsToAll();
+      Alert.alert("Success", "Notifications sent to all users!");
+    } catch (error) {
+      console.error("Error sending notifications:", error);
+      Alert.alert("Error", "There was an issue sending notifications.");
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -65,6 +76,22 @@ const StudentHomePage = () => {
         />
         <Text style={styles.headerText}>Today's Menu</Text>
       </View>
+
+      <View style={styles.cardContainer}>
+        {todayMenu ? (
+          renderCard(todayMenu)
+        ) : (
+          <Text style={styles.noMenuText}>No menu available for today.</Text>
+        )}
+      </View>
+
+      <View style={styles.notificationButtonContainer}>
+        <Button
+          title="Send Notifications to All Users"
+          onPress={handleSendNotifications}
+        />
+      </View>
+
       <View style={styles.quoteContainer}>
         <Text style={styles.quoteText}>
           "A good meal can change the course of your day."

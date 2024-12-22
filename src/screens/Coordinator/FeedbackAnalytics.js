@@ -1,214 +1,140 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
 import { PieChart, BarChart } from "react-native-chart-kit";
-import { Button, Menu, Provider } from "react-native-paper";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { getAllFeedbackReports } from "../../../backend/feedbacknew"; // Adjust API import path
 
 const screenWidth = Dimensions.get("window").width;
 
-const categories = [
-  "TimelinessOfService",
-  "CleanlinessOfDiningHall",
-  "FoodQuality",
-  "QuantityOfFood",
-  "CourtesyOfStaff",
-  "StaffHygiene",
-  "MenuAdherence",
-  "WashAreaCleanliness",
-  "Comments",
-];
-
-const FeedbackScreen = () => {
-  const [selectedCategory, setSelectedCategory] = useState("FoodQuality");
-  const [feedbackData, setFeedbackData] = useState({
-    messFeedback: [],
-    timeFeedback: [],
-  });
-
-  const [menuVisible, setMenuVisible] = useState(false);
+const FeedbackAnalytics = () => {
+  const [feedbackData, setFeedbackData] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    // Simulated backend data fetch
     const fetchData = async () => {
-      const data = {
-        messFeedback: [
-          { name: "Mess A", FoodQuality: 80, StaffHygiene: 70 },
-          { name: "Mess B", FoodQuality: 60, StaffHygiene: 85 },
-          { name: "Mess C", FoodQuality: 90, StaffHygiene: 75 },
-        ],
-        timeFeedback: [
-          { label: "Jun-Jul", FoodQuality: 70, StaffHygiene: 60 },
-          { label: "Jul-Aug", FoodQuality: 80, StaffHygiene: 70 },
-        ],
-      };
-      setFeedbackData(data);
+      try {
+        const response = await getAllFeedbackReports();
+        if (response.success) {
+          setFeedbackData(response.feedbackReports);
+          extractCategories(response.feedbackReports);
+        } else {
+          console.log("Failed to fetch data");
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
     };
 
     fetchData();
   }, []);
 
-  // Prepare Pie Chart Data for Mess Feedback
-  const pieDataMess = feedbackData.messFeedback.map((item, index) => ({
-    name: item.name,
-    population: item[selectedCategory] || 0,
-    color: ["#007BFF", "#28A745", "#FFC107"][index],
-    legendFontColor: "#000",
-    legendFontSize: 12,
-  }));
-
-  // Prepare Pie Chart Data for Time Feedback
-  const pieDataTime = feedbackData.timeFeedback.map((item, index) => ({
-    name: item.label,
-    population: item[selectedCategory] || 0,
-    color: ["#007BFF", "#28A745", "#FFC107", "#DC3545"][index],
-    legendFontColor: "#000",
-    legendFontSize: 12,
-  }));
-
-  // Prepare Bar Chart Data for Mess Feedback
-  const barDataMess = {
-    labels: feedbackData.messFeedback.map((item) => item.name),
-    datasets: [
-      {
-        data: feedbackData.messFeedback.map(
-          (item) => item[selectedCategory] || 0
-        ),
-      },
-    ],
+  const extractCategories = (data) => {
+    const allCategories = new Set();
+    data.forEach((report) => {
+      Object.keys(report.feedbackOptions).forEach((key) => {
+        if (key !== "FeedbackDuration" && key !== "comment") {
+          allCategories.add(key);
+        }
+      });
+    });
+    setCategories(Array.from(allCategories));
   };
 
-  // Prepare Bar Chart Data for Time Feedback
-  const barDataTime = {
-    labels: feedbackData.timeFeedback.map((item) => item.label),
-    datasets: [
-      {
-        data: feedbackData.timeFeedback.map(
-          (item) => item[selectedCategory] || 0
-        ),
-      },
-    ],
+  const calculateCategoryStats = (category) => {
+    const categoryValues = feedbackData.map(
+      (report) => report.feedbackOptions[category] || 0
+    );
+
+    // Calculate average
+    const sum = categoryValues.reduce((acc, value) => acc + value, 0);
+    const average = sum / categoryValues.length;
+
+    // Frequency of each rating
+    const frequency = categoryValues.reduce((acc, value) => {
+      acc[value] = (acc[value] || 0) + 1;
+      return acc;
+    }, {});
+
+    return { average, frequency };
   };
 
-  // Tab Routes
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: "mess", title: "Feedback by Mess" },
-    { key: "time", title: "Feedback by Time Period" },
-  ]);
+  const renderChart = (categoryStats) => {
+    const colors = [
+      "#FF5733",
+      "#33FF57",
+      "#3357FF",
+      "#FF33A1",
+      "#FFB533",
+      "#33FFF5",
+      "#F533FF",
+      "#57FF33",
+    ];
 
-  // Tab Scenes
-  const renderScene = SceneMap({
-    mess: () => (
-      <ScrollView>
-        {/* Pie Chart for Feedback by Mess */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} by Mess (Pie Chart)
-        </Text>
-        <PieChart
-          data={pieDataMess}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor={"population"}
-          backgroundColor={"transparent"}
-          paddingLeft={"15"}
-          absolute
-        />
+    const data = Object.keys(categoryStats.frequency).map((value, index) => ({
+      name: `Rating ${value}`,
+      population: categoryStats.frequency[value],
+      color: colors[index % colors.length],
+      legendFontColor: "#000",
+      legendFontSize: 12,
+    }));
 
-        {/* Bar Chart for Feedback by Mess */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} by Mess (Bar Chart)
-        </Text>
-        <BarChart
-          data={barDataMess}
-          width={screenWidth - 32}
-          height={220}
-          yAxisLabel=""
-          chartConfig={chartConfig}
-          verticalLabelRotation={30}
-        />
-      </ScrollView>
-    ),
-    time: () => (
-      <ScrollView>
-        {/* Pie Chart for Feedback Over Time */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} Over Time (Pie Chart)
-        </Text>
-        <PieChart
-          data={pieDataTime}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          accessor={"population"}
-          backgroundColor={"transparent"}
-          paddingLeft={"15"}
-          absolute
-        />
+    return (
+      <PieChart
+        data={data}
+        width={screenWidth - 32}
+        height={220}
+        chartConfig={chartConfig}
+        accessor="population"
+        backgroundColor="transparent"
+        paddingLeft="15"
+        absolute
+      />
+    );
+  };
 
-        {/* Bar Chart for Feedback Over Time */}
-        <Text style={styles.chartTitle}>
-          {selectedCategory} Over Time (Bar Chart)
-        </Text>
-        <BarChart
-          data={barDataTime}
-          width={screenWidth - 32}
-          height={220}
-          yAxisLabel=""
-          chartConfig={chartConfig}
-          verticalLabelRotation={30}
-        />
-      </ScrollView>
-    ),
-  });
+  const renderBarChart = (categoryStats) => {
+    const data = {
+      labels: Object.keys(categoryStats.frequency),
+      datasets: [
+        {
+          data: Object.values(categoryStats.frequency),
+        },
+      ],
+    };
+
+    return (
+      <BarChart
+        data={data}
+        width={screenWidth - 32}
+        height={220}
+        chartConfig={chartConfig}
+        verticalLabelRotation={30}
+      />
+    );
+  };
+
+  const renderAnalytics = () => {
+    return categories.map((category) => {
+      const categoryStats = calculateCategoryStats(category);
+
+      return (
+        <View key={category}>
+          <Text style={styles.statsText}>Category: {category}</Text>
+          <Text style={styles.statsText}>
+            Average Rating: {categoryStats.average.toFixed(2)}
+          </Text>
+          {renderChart(categoryStats)}
+          {renderBarChart(categoryStats)}
+        </View>
+      );
+    });
+  };
 
   return (
-    <Provider>
-      <View style={styles.container}>
-        <Text style={styles.title}>Mess Feedback Dashboard</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Feedback Analytics</Text>
 
-        {/* Category Filter */}
-        <View style={styles.filterContainer}>
-          <Text style={styles.label}>Select Category: </Text>
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <Button mode="outlined" onPress={() => setMenuVisible(true)}>
-                {selectedCategory}
-              </Button>
-            }
-          >
-            {categories.map((category) => (
-              <Menu.Item
-                key={category}
-                title={category}
-                onPress={() => {
-                  setSelectedCategory(category);
-                  setMenuVisible(false);
-                }}
-              />
-            ))}
-          </Menu>
-        </View>
-
-        {/* Tabs */}
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: screenWidth }}
-          renderTabBar={(props) => (
-            <TabBar
-              {...props}
-              indicatorStyle={{ backgroundColor: "blue" }}
-              style={{ backgroundColor: "blue" }}
-              labelStyle={{ color: "blue" }}
-            />
-          )}
-        />
-      </View>
-    </Provider>
+      {renderAnalytics()}
+    </ScrollView>
   );
 };
 
@@ -228,6 +154,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f4f4f4",
     paddingTop: 16,
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 22,
@@ -235,17 +162,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
   },
-  filterContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 8,
-  },
-  label: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  chartTitle: {
+  statsText: {
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
@@ -253,4 +170,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FeedbackScreen;
+export default FeedbackAnalytics;
