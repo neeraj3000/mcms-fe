@@ -135,6 +135,10 @@ const InspectionReports = () => {
           <Picker.Item label="Mess 2" value="2" />
           <Picker.Item label="Mess 3" value="3" />
           <Picker.Item label="Mess 4" value="4" />
+          <Picker.Item label="Mess 5" value="5" />
+          <Picker.Item label="Mess 6" value="6" />
+          <Picker.Item label="Mess 7" value="7" />
+          <Picker.Item label="Mess 8" value="8" />
         </Picker>
       </View>
 

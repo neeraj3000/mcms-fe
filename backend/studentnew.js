@@ -47,7 +47,34 @@ export const registerStudent = async (name, collegeId, mobileNo, gender, batch, 
     throw new Error(err.message);
   }
 };*/
+// Get Student by userId (Student Collection)
+export const getStudentDetailsByUserId = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error("User ID is required.");
+    }
 
+    const studentsRef = collection(firestore, "Student");
+    const studentQuery = query(studentsRef, where("userId", "==", parseInt(userId)));
+    const snapshot = await getDocs(studentQuery);
+
+    if (snapshot.empty) {
+      return { success: false, message: "Student not found." };
+    }
+
+    const studentDoc = snapshot.docs[0]; // Assuming userId is unique and there's only one matching document
+    const studentData = studentDoc.data();
+
+    return {
+      success: true,
+      messId: studentData.messId || null, // Return messId or null if not present
+      isFeedback: studentData.isFeedback || false, // Default to false if isFeedback is not set
+    };
+  } catch (err) {
+    console.error("Error fetching student details:", err);
+    return { success: false, error: err.message };
+  }
+};
 // Register Student and User
 export const registerStudent = async (name, collegeId, mobileNo, gender, batch, email, password) => {
   try {

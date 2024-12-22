@@ -4,36 +4,51 @@ import * as FileSystem from 'expo-file-system';
 import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
 
 // Upload to Cloudinary
+// Upload to Cloudinary
 export async function uploadToCloudinary(image, type) {
   try {
+    console.log("Starting Cloudinary upload...");
+    console.log("Image path:", image);
+    console.log("Image type:", type);
+
+    if (!image || typeof image !== "string") {
+      throw new Error("Invalid image path provided.");
+    }
+
     const cloudinaryUrl = "https://api.cloudinary.com/v1_1/dwi8fucyt/upload";
     const uploadPreset = "mcms-issue";
 
+    console.log("Reading image as Base64...");
     const blob = await FileSystem.readAsStringAsync(image, { encoding: "base64" });
+    console.log("Base64 string created. Length:", blob.length);
 
+    console.log("Preparing form data...");
     const formData = new FormData();
     formData.append("file", `data:${type}/;base64,${blob}`);
     formData.append("upload_preset", uploadPreset);
     formData.append("cloud_name", "dwi8fucyt");
 
+    console.log("Sending request to Cloudinary...");
     const uploadResponse = await fetch(cloudinaryUrl, {
       method: "POST",
       body: formData,
     });
 
+    console.log("Response received from Cloudinary.");
     const responseData = await uploadResponse.json();
+    console.log("Cloudinary response data:", responseData);
 
     if (responseData.secure_url) {
+      console.log("Image uploaded successfully:", responseData.secure_url);
       return responseData.secure_url;
     } else {
-      throw new Error("Image upload failed");
+      throw new Error(responseData.error?.message || "Image upload failed");
     }
   } catch (err) {
-    console.error(err);
+    console.error("Error during Cloudinary upload:", err);
     throw new Error(err.message);
   }
 }
-
 // Create Issue
 export async function createIssue({ description, category, image, userId, messNo }) {
   try {
@@ -128,7 +143,7 @@ export async function updateIssue(id, updates) {
 }
 
 // Delete Issue
-export async function deleteIssue(id) {
+export async function deleteIssueById(id) {
   try {
     if (!id) {
       throw new Error("Issue ID is required");

@@ -12,13 +12,16 @@ import {
 import RNPickerSelect from "react-native-picker-select";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import axios from "axios";
 import { useSession } from "../../SessionContext";
-import { getRepresentativeByUserId } from "../../../backend/representativesnew";
+import {
+  getRepresentativeByUserId,
+  getMrIdByUserId,
+} from "../../../backend/representativesnew";
 import {
   getInspectOptions,
   createInspectionReport,
 } from "../../../backend/inspectionnew";
+
 
 const QualityInspectionPage = () => {
   const { user } = useSession();
@@ -27,13 +30,14 @@ const QualityInspectionPage = () => {
   const [comments, setComments] = useState("");
   const [messNo, setMessNo] = useState(null);
   const [image, setImage] = useState(null);
+  const [inspectionAllowed, setInspectionAllowed] = useState(false); // Inspection status
 
   // Fetch inspection options
   useEffect(() => {
     const fetchOptions = async () => {
       try {
         if (!user || !user.id) {
-          Alert.alert("Error", "User not logged in.");
+          
           return;
         }
 
@@ -41,6 +45,15 @@ const QualityInspectionPage = () => {
         if (res.success) {
           const details = res.representative;
           setMessNo(details.messNo.toString());
+
+          if (!details.inspectionStatus) {
+            setInspectionAllowed(false); // Restrict rendering
+            Alert.alert("Notice", "Inspection is not allowed at this time.");
+            return;
+          }
+
+          setInspectionAllowed(true);
+
           const response = await getInspectOptions(details.messNo.toString());
 
           if (response.success) {
@@ -109,21 +122,20 @@ const QualityInspectionPage = () => {
     }
 
     if (!user || !user.id) {
-      Alert.alert("Error", "User not logged in.");
+      
+
       return;
     }
 
     try {
-      console.log(user.id)
-      console.log(messNo)
-      console.log(ratings)
+      const res = await getMrIdByUserId(user.id);
       const response = await createInspectionReport(
-        user.id,
+        res.mrId,
         messNo,
         image,
         ratings
       );
-      console.log(response.success)
+
       if (response.success) {
         Alert.alert("Success", "Quality inspection submitted successfully!");
         setRatings(
@@ -145,6 +157,16 @@ const QualityInspectionPage = () => {
       console.error("Error submitting inspection:", error);
     }
   };
+
+  if (!inspectionAllowed) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.noticeText}>
+          Inspection is currently not allowed. Please check back later.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -200,6 +222,12 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f9f9f9",
     flexGrow: 1,
+    justifyContent: "center",
+  },
+  noticeText: {
+    fontSize: 18,
+    textAlign: "center",
+    color: "#555",
   },
   title: {
     fontSize: 24,

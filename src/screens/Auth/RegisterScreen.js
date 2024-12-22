@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { registerStudent } from "../../../backend/student";
+import { registerStudent } from "../../../backend/studentnew";
 import {
   StyleSheet,
   Text,
