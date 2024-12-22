@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Button, Modal } from "react-native";
 import { getAllMess } from "../../../backend/messnew"; // Make sure this path is correct
 import {
-  getSupervisorsByMessId,
   deleteSupervisorById,
   updateSupervisorProfile,
 } from "../../../backend/supervisornew"; // Same here for supervisor functions
+import { getSupervisorsByMessId } from "../../../backend/messnew"; // Same here for supervisor functions
 import { Picker } from "@react-native-picker/picker";
 
 const ViewMessSupervisor = () => {

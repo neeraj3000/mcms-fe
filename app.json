@@ -8,6 +8,9 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "notification": {
+      "vapidPublicKey": "BDCCnrY4tIYjdFQSO2oTV-0BvkYdoyDnAyWcOfeNvB1H0iY3tVkN8NlYeS7MEMn1_uFeE3OwekQChbwVBal9u3o"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.starlord78.mess"

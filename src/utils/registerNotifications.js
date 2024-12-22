@@ -1,30 +1,48 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { firestore } from "../../backend/firebase"; // Import your firebase setup
-import { doc, setDoc } from "firebase/firestore";
 import { addPushNotificationToken } from "../../backend/PushNotificationnew";
 
 // Register Push Notifications
 export async function registerForPushNotificationsAsync(userId, category) {
-  let token;
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-    });
+  try {
+    console.log("Token registration initiated...");
+
+    if (!userId || !category) {
+      throw new Error("Both `userId` and `category` are required parameters.");
+    }
+
+    // Configure Android-specific notification channel
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+      });
+    }
+
+    // Request notification permissions
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== "granted") {
+      throw new Error(
+        "Push notification permissions not granted. Please enable permissions in your device settings."
+      );
+    }
+
+    // Retrieve Expo Push Token
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log("Expo Push Token:", token);
+
+    // Save the token to Firestore
+    const res = await addPushNotificationToken(userId, token, category);
+    if (res.success) {
+      console.log("Push Token Added Successfully:", res.message);
+    } else {
+      console.error("Failed to Add Push Token:", res.message);
+    }
+
+    return token; // Return the token for potential further use
+  } catch (err) {
+    console.error("Error during push notification registration:", err.message);
+    alert(`Error: ${err.message}`);
+    return null;
   }
-
-  const { status } = await Notifications.getPermissionsAsync();
-  if (status !== "granted") {
-    alert("Failed to get push token for push notifications!");
-    return;
-  }
-
-  token = (await Notifications.getExpoPushTokenAsync()).data;
-  console.log("Expo Push Token:", token);
-
-  let res = await addPushNotificationToken(userId, token, category);
-  console.log("Push Token Added:", res.success);
-
-  return token;
 }

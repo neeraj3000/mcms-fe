@@ -10,6 +10,7 @@ import AdminPage from "../app/AdminPage";
 import Director from "../app/Director";
 import AdministrativeOfficer from "../src/screens/AdministrativeOfficer/AdministrativeOfficer";
 import Supervisor from "./Supervisor";
+import AuthorityNavigate from "./Authority";
 import { Text, View } from "react-native";
 
 // import { registerForPushNotificationsAsync } from "../src/utils/registerNotifications";
@@ -29,7 +30,6 @@ const App = () => {
     //   );
     //   setToken(pushToken); // Set the token in state
     // };
-
     // getToken(); // Call the function to get the token
   }, []);
 
@@ -86,6 +86,12 @@ const App = () => {
         <Stack.Screen
           name="Supervisor"
           component={Supervisor}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="Authority"
+          component={AuthorityNavigate}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
