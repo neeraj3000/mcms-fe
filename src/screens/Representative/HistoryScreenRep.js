@@ -212,6 +212,9 @@ const IssueHistory = () => {
         <Text style={styles.modalDescription}>
           Description: {selectedIssue.description}
         </Text>
+        <Text style={styles.modalDescription}>
+          Mess No: {selectedIssue.messNo}
+        </Text>
         {selectedIssue.image && (
           <Image
             source={{ uri: selectedIssue.image }}

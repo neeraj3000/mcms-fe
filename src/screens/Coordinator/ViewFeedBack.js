@@ -128,7 +128,7 @@ const ViewFeedBack = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>feedback Reports</Text>
+      <Text style={styles.title}>Feedback Reports</Text>
 
       <View style={styles.pickerContainer}>
         <Text style={styles.pickerLabel}>Select Mess Number:</Text>

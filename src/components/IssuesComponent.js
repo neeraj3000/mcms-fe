@@ -10,6 +10,7 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import RefreshButton from "./RefreshButton"; // Import the RefreshButton component
 import { getAllIssues } from "../../backend/issuesnew";
 import { useSession } from "../SessionContext";
@@ -24,6 +25,7 @@ const IssuesComponent = ({ mode = "none" }) => {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [votes, setVotes] = useState({});
+  const [selectedMess, setSelectedMess] = useState("all");
 
   const colors = {
     primary: "#007bff", // Blue
@@ -43,13 +45,15 @@ const IssuesComponent = ({ mode = "none" }) => {
         const issuesData = response.issues;
 
         if (Array.isArray(issuesData)) {
-          const newIssues = issuesData.filter(
-            (newIssue) =>
-              !issues.some((existingIssue) => existingIssue.id === newIssue.id)
-          );
+          const filteredIssues =
+            selectedMess === "all"
+              ? issuesData
+              : issuesData.filter(
+                  (issue) => issue.messNo === selectedMess
+                );
 
           const newVotes = {};
-          for (const issue of newIssues) {
+          for (const issue of filteredIssues) {
             const userVote = await getUserVote(issue.id, user.id);
             newVotes[issue.id] = {
               upvotes: issue.upvotes || 0,
@@ -59,10 +63,7 @@ const IssuesComponent = ({ mode = "none" }) => {
             };
           }
 
-          const combinedIssues = [...issues, ...newIssues];
-
-          // Sort combined issues based on (upvotes + downvotes)
-          combinedIssues.sort((a, b) => {
+          filteredIssues.sort((a, b) => {
             const votesA =
               (votes[a.id]?.upvotes || a.upvotes || 0) +
               (votes[a.id]?.downvotes || a.downvotes || 0);
@@ -72,15 +73,14 @@ const IssuesComponent = ({ mode = "none" }) => {
             return votesB - votesA; // Descending order
           });
 
-          setIssues(combinedIssues);
+          setIssues(filteredIssues);
           setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
-          setHasMore(newIssues.length > 0);
+          setHasMore(filteredIssues.length > 0);
         } else {
           setHasMore(false);
         }
       }
     } catch (error) {
-      
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ const IssuesComponent = ({ mode = "none" }) => {
 
   useEffect(() => {
     fetchIssues();
-  }, [page]);
+  }, [selectedMess]);
 
   const handleLoadMore = () => {
     if (hasMore && !loading) {
@@ -133,7 +133,10 @@ const IssuesComponent = ({ mode = "none" }) => {
           };
         });
       } else {
-        Alert.alert("Error", response?.message || "Failed to process the vote.");
+        Alert.alert(
+          "Error",
+          response?.message || "Failed to process the vote."
+        );
       }
     } catch (error) {
       Alert.alert("Error", "Failed to process the vote. Please try again.");
@@ -160,6 +163,21 @@ const IssuesComponent = ({ mode = "none" }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>All Issues</Text>
+
+      <Picker
+        selectedValue={selectedMess}
+        style={styles.picker}
+        onValueChange={(itemValue) => setSelectedMess(itemValue)}
+      >
+        <Picker.Item label="All Messes" value="all" />
+        {[...Array(8).keys()].map((i) => (
+          <Picker.Item
+            key={i + 1}
+            label={`Mess ${i + 1}`}
+            value={(i + 1).toString()}
+          />
+        ))}
+      </Picker>
 
       <RefreshButton onRefresh={refreshIssues} />
 
@@ -217,7 +235,7 @@ const IssuesComponent = ({ mode = "none" }) => {
             {mode === "none" && (
               <View style={styles.voteContainerNone}>
                 <Text style={[styles.voteTextRight, { color: colors.primary }]}>
-                  🚀 {votes[item.id]?.upvotes || 0}   💥{" "}
+                  🚀 {votes[item.id]?.upvotes || 0} 💥{" "}
                   {votes[item.id]?.downvotes || 0}
                 </Text>
               </View>
@@ -234,6 +252,7 @@ const IssuesComponent = ({ mode = "none" }) => {
         }
       />
 
+      {/* Modal and other components remain the same */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -281,6 +300,24 @@ const IssuesComponent = ({ mode = "none" }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
+  },
+  picker: {
+    height: 50,
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   container: {
     flex: 1,
     backgroundColor: "#f2f2f2",

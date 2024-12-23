@@ -229,6 +229,10 @@ const AllComplaints = () => {
                     <Text style={styles.modalSubTitle}>Status: </Text>
                     {selectedIssue.status}
                   </Text>
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Mess No: </Text>
+                    {selectedIssue.messNo}
+                  </Text>
                   <TouchableOpacity
                     onPress={closeModal}
                     style={styles.modalCloseButton}
@@ -251,7 +255,7 @@ const AllComplaints = () => {
         </TouchableOpacity>
       )}
 
-      <RefreshButton onRefresh={handleRefresh} /> 
+      <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
 };

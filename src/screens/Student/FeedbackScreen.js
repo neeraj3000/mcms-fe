@@ -20,44 +20,43 @@ const FeedbackForm = () => {
   const [isFeedbackEnabled, setIsFeedbackEnabled] = useState(false);
   const [feedbackFields, setFeedbackFields] = useState([]);
   const [feedback, setFeedback] = useState({});
-  const [showForm, setShowForm] = useState(false);
   const [messNumber, setMessNumber] = useState(null);
   const [feedbackDuration, setFeedbackDuration] = useState("");
   const [comment, setComment] = useState("");
   const { user } = useSession(); // Access session data
 
+  const fetchData = async () => {
+    try {
+      // Fetch user details
+      const userDetails = await getStudentDetailsByUserId(user.id);
+      setMessNumber(userDetails.messId);
+      setIsFeedbackEnabled(userDetails.isFeedback);
+
+      // Fetch feedback fields
+      const feedbackOptions = await getAllFeedbackOptions();
+      const lastTwoFields = feedbackOptions.options.slice(-2);
+      setFeedbackFields(feedbackOptions.options.slice(0, -2));
+      const duration = `${lastTwoFields[0]} - ${lastTwoFields[1]}`;
+      setFeedbackDuration(duration);
+
+      // Initialize feedback state
+      const initialFeedback = feedbackOptions.options.reduce(
+        (acc, field) => ({ ...acc, [field]: null }),
+        {}
+      );
+      setFeedback({
+        ...initialFeedback,
+        FeedbackDuration: duration,
+      });
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      Alert.alert("Error", "Failed to load feedback data. Please try again.");
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch user details
-        const userDetails = await getStudentDetailsByUserId(user.id);
-        setMessNumber(userDetails.messId);
-        setIsFeedbackEnabled(userDetails.isFeedback);
-
-        // Fetch feedback fields
-        const feedbackOptions = await getAllFeedbackOptions();
-        const lastTwoFields = feedbackOptions.options.slice(-2);
-        setFeedbackFields(feedbackOptions.options.slice(0, -2));
-        const duration = `${lastTwoFields[0]} - ${lastTwoFields[1]}`;
-        setFeedbackDuration(duration);
-
-        // Initialize feedback state
-        const initialFeedback = feedbackOptions.options.reduce(
-          (acc, field) => ({ ...acc, [field]: null }),
-          {}
-        );
-        setFeedback({
-          ...initialFeedback,
-          FeedbackDuration: duration,
-        });
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        Alert.alert("Error", "Failed to load feedback data. Please try again.");
-      }
-    };
-
     fetchData();
-  }, [isFeedbackEnabled]);
+  }, []);
 
   const handleRatingChange = (field, rating) => {
     setFeedback((prev) => ({
@@ -98,7 +97,7 @@ const FeedbackForm = () => {
               await createFeedbackReport(user.id, messNumber, feedbackData);
 
               Alert.alert("Success", "Feedback successfully submitted!");
-              setShowForm(false); // Hide the form after submission
+              fetchData(); // Reload data after submission
             } catch (error) {
               console.error("Error submitting feedback:", error);
               Alert.alert(
@@ -111,7 +110,6 @@ const FeedbackForm = () => {
       ]
     );
   };
-
 
   const isSubmitDisabled = () => {
     return feedbackFields.some((field) => feedback[field] === null);
@@ -129,13 +127,6 @@ const FeedbackForm = () => {
             You have already submitted the feedback.
           </Text>
         </View>
-      ) : !showForm ? (
-        <TouchableOpacity
-          style={styles.feedbackButton}
-          onPress={() => setShowForm(true)}
-        >
-          <Text style={styles.feedbackButtonText}>Give Feedback</Text>
-        </TouchableOpacity>
       ) : (
         <ScrollView contentContainerStyle={styles.form}>
           <Text style={styles.messNumberText}>Mess Number: {messNumber}</Text>
@@ -197,7 +188,6 @@ const FeedbackForm = () => {
 };
 
 const styles = StyleSheet.create({
-  // Style definitions remain the same as your initial code.
   container: {
     flex: 1,
     backgroundColor: "#f0f8ff", // Light blue background
@@ -212,20 +202,6 @@ const styles = StyleSheet.create({
     color: "#888", // Grey color
     fontSize: 18,
     fontWeight: "500",
-  },
-  feedbackButton: {
-    backgroundColor: "#007BFF", // Primary blue color
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 20,
-    elevation: 3,
-  },
-  feedbackButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
   },
   form: {
     paddingBottom: 30,

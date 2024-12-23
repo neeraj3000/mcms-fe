@@ -149,36 +149,73 @@ const IssueHistory = () => {
     return (
       <ScrollView contentContainerStyle={styles.modalScrollContent}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalCategory}>Category: {selectedIssue.category}</Text>
+          <Text style={styles.modalCategory}>
+            Category: {selectedIssue.category}
+          </Text>
           {selectedIssue.status !== "resolved" && (
             <View style={styles.modalActions}>
               <TouchableOpacity onPress={openEditModal}>
-                <MaterialIcons name="edit" size={24} color="grey" style={styles.icon} />
+                <MaterialIcons
+                  name="edit"
+                  size={24}
+                  color="grey"
+                  style={styles.icon}
+                />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => confirmDeleteIssue(selectedIssue.id)}>
-                <MaterialIcons name="delete" size={24} color="red" style={styles.icon} />
+              <TouchableOpacity
+                onPress={() => confirmDeleteIssue(selectedIssue.id)}
+              >
+                <MaterialIcons
+                  name="delete"
+                  size={24}
+                  color="red"
+                  style={styles.icon}
+                />
               </TouchableOpacity>
             </View>
           )}
           <TouchableOpacity onPress={closeModal}>
-            <MaterialIcons name="close" size={30} color="grey" style={styles.closeIcon} />
+            <MaterialIcons
+              name="close"
+              size={30}
+              color="grey"
+              style={styles.closeIcon}
+            />
           </TouchableOpacity>
         </View>
         <Text style={styles.modalDescription}>
           Description: {selectedIssue.description}
         </Text>
+        <Text style={styles.modalDescription}>
+          Mess No: {selectedIssue.messNo}
+        </Text>
         {selectedIssue.image && (
-          <Image source={{ uri: selectedIssue.image }} style={styles.issueImage} />
+          <Image
+            source={{ uri: selectedIssue.image }}
+            style={styles.issueImage}
+          />
         )}
         {selectedIssue.status === "resolved" && (
           <View style={styles.reraiseSection}>
-            <Text style={styles.reraiseText}>This issue is resolved. Would you like to reraise it?</Text>
+            <Text style={styles.reraiseText}>
+              This issue is resolved. Would you like to reraise it?
+            </Text>
             <View style={styles.reraiseButtons}>
               <TouchableOpacity onPress={handleReraise}>
-                <MaterialIcons name="check-circle" size={30} color="green" style={styles.reraiseIcon} />
+                <MaterialIcons
+                  name="check-circle"
+                  size={30}
+                  color="green"
+                  style={styles.reraiseIcon}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={closeModal}>
-                <MaterialIcons name="cancel" size={30} color="red" style={styles.reraiseIcon} />
+                <MaterialIcons
+                  name="cancel"
+                  size={30}
+                  color="red"
+                  style={styles.reraiseIcon}
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -221,7 +258,6 @@ const IssueHistory = () => {
       </TouchableOpacity>
     );
   };
-  console.log(issueHistory);
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Issue History</Text>

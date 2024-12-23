@@ -22,7 +22,6 @@ import {
   createInspectionReport,
 } from "../../../backend/inspectionnew";
 
-
 const QualityInspectionPage = () => {
   const { user } = useSession();
   const [ratings, setRatings] = useState({});
@@ -31,13 +30,13 @@ const QualityInspectionPage = () => {
   const [messNo, setMessNo] = useState(null);
   const [image, setImage] = useState(null);
   const [inspectionAllowed, setInspectionAllowed] = useState(false); // Inspection status
+  const [refreshKey, setRefreshKey] = useState(0); // Key to trigger re-renders
 
   // Fetch inspection options
   useEffect(() => {
     const fetchOptions = async () => {
       try {
         if (!user || !user.id) {
-          
           return;
         }
 
@@ -84,7 +83,7 @@ const QualityInspectionPage = () => {
     };
 
     fetchOptions();
-  }, [user]);
+  }, [user, refreshKey]); // Depend on refreshKey to trigger re-fetch
 
   const handleRatingChange = (category, value) => {
     setRatings((prevRatings) => ({
@@ -122,8 +121,6 @@ const QualityInspectionPage = () => {
     }
 
     if (!user || !user.id) {
-      
-
       return;
     }
 
@@ -146,6 +143,7 @@ const QualityInspectionPage = () => {
         );
         setComments("");
         setImage(null);
+        setRefreshKey((prevKey) => prevKey + 1); // Trigger re-fetch
       } else {
         Alert.alert(
           "Error",
