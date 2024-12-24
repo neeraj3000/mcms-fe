@@ -25,7 +25,10 @@ const Admin = () => {
     if (
       !email ||
       (role !== "Mess Representative" && (!name || !password || !mobileNo)) ||
-      (role === "Mess Representative" && !mess)
+      (role !== "Authority" &&
+        role !== "Coordinator" &&
+        role !== "Supervisor" &&
+        !mess)
     ) {
       Alert.alert("Error", "Please fill in all the required fields.");
       return;
@@ -47,7 +50,13 @@ const Admin = () => {
           response = await registerCoordinator(name, mobileNo, email, password);
           break;
         case "Supervisor":
-          response = await registerSupervisor(name, mobileNo, email, password);
+          response = await registerSupervisor(
+            name,
+            mobileNo,
+            email,
+            password,
+            mess
+          );
           break;
         case "Mess Representative":
           response = await createRepresentative(email, mess);
@@ -134,9 +143,30 @@ const Admin = () => {
           />
         </>
       )}
+      {(role === "Supervisor") && (
+        <>
+          
 
-      {/* Input Fields for Mess Representative */}
-      {role === "Mess Representative" && (
+          <Text style={styles.label}>Mess Number</Text>
+          <View style={styles.dropdown}>
+            <Picker
+              selectedValue={mess}
+              onValueChange={(itemValue) => setMess(itemValue)}
+            >
+              <Picker.Item label="Select Mess" value="" />
+              {Array.from({ length: 8 }, (_, i) => (
+                <Picker.Item
+                  key={i}
+                  label={`Mess ${i + 1}`}
+                  value={`${i + 1}`}
+                />
+              ))}
+            </Picker>
+          </View>
+        </>
+      )}
+      {/* Input Fields for Mess Representative and Supervisor */}
+      {(role === "Mess Representative") && (
         <>
           <Text style={styles.label}>Email</Text>
           <TextInput

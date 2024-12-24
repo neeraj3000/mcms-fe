@@ -221,6 +221,35 @@ export async function getIssuesByUserId(userId) {
   }
 }
 
+// Get Mess Number by User ID
+export async function getMessNoByUserId(userId) {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required.');
+    }
+
+    const representativeRef = collection(firestore, 'representative');
+    const snapshot = await getDocs(query(representativeRef, where('userId', '==', userId)));
+
+    if (snapshot.empty) {
+      throw new Error('No representative found for the given User ID.');
+    }
+
+    // Assuming only one representative document per userId
+    const representativeData = snapshot.docs[0].data();
+    const messNo = representativeData.messNo;
+
+    if (!messNo) {
+      throw new Error('Mess Number is not available for the given User ID.');
+    }
+
+    return { success: true, messNo };
+  } catch (err) {
+    console.error('Error getting Mess Number by User ID:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 // Get Issues by messNo
 export async function getIssuesByMessNo(messNo) {
   try {

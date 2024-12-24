@@ -10,22 +10,26 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Keyboard,
+  Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import axios from "axios";
-import RefreshButton from '../../components/RefreshButton';  // Import RefreshButton
-import { getAllIssues } from "@/backend/issuesnew";
-import { updateIssue } from "@/backend/issuesnew";
+import RefreshButton from "../../components/RefreshButton";
+import {
+  getMessNoByUserId,
+  getIssuesByMessNo,
+  updateIssue,
+} from "@/backend/issuesnew";
+import { useSession } from "@/src/SessionContext";
+import { getStudentById } from "../../../backend/studentnew";
 
-const IssueItem = React.memo(({ id, title, status, onResolve, onForward, onPress }) => {
-  return (
+const IssueItem = React.memo(
+  ({ id, title, status, onResolve, onForward, onPress }) => (
     <View style={styles.issueItem}>
       <TouchableOpacity onPress={onPress} style={styles.issueContent}>
         <Text style={styles.issueTitle}>{title}</Text>
         <Text style={styles.issueStatus}>{status}</Text>
       </TouchableOpacity>
-
-      {status!== "resolved" && status !== "forwarded" && (
+      {status !== "resolved" && status !== "forwarded" && (
         <View style={styles.resolveContainer}>
           <TouchableOpacity onPress={onResolve} style={styles.resolveButton}>
             <Icon name="checkmark-circle" size={20} color="#fff" />
@@ -38,33 +42,57 @@ const IssueItem = React.memo(({ id, title, status, onResolve, onForward, onPress
         </View>
       )}
     </View>
-  );
-});
+  )
+);
 
 const AllComplaints = () => {
+  const { user } = useSession();
   const [issues, setIssues] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
-  // Fetch issues with pagination
-  const fetchIssues = async () => {
-    if (loading || !hasMore) return;
+  const fetchIssues = async (reset = false) => {
+    if (loading || (!reset && !hasMore)) return;
+
+    if (reset) {
+      setPage(1);
+      setIssues([]);
+      setHasMore(true);
+    }
 
     setLoading(true);
     try {
-      const response = await await getAllIssues()
+      if (!user || !user.id) {
+        console.error("User or user ID is missing");
+        Alert.alert("Error", "Failed to fetch user information.");
+        return;
+      }
+
+      const res = await getMessNoByUserId(user.id);
+      const response = await getIssuesByMessNo(res.messNo.toString());
+      const result = await getStudentById(user.id);
+      if (
+        response.success === false &&
+        response.message &&
+        result.success === false
+      ) {
+        console.warn("Unexpected response format:", response.message);
+        Alert.alert("Info", response.message); // Display the message
+        setIssues([]); // Clear any existing issues
+        setHasMore(false); // No more data to fetch
+        return;
+      }
 
       const issuesData = response.issues;
-
+      const data = result.studentData;
       if (Array.isArray(issuesData)) {
         const newIssues = issuesData.filter(
           (newIssue) =>
-            !issues.some(
-              (existingIssue) => existingIssue.id === newIssue.id
-            )
+            !issues.some((existingIssue) => existingIssue.id === newIssue.id)
         );
 
         setIssues((prevIssues) => [...prevIssues, ...newIssues]);
@@ -80,48 +108,34 @@ const AllComplaints = () => {
     }
   };
 
+  // Initial data fetch
   useEffect(() => {
     fetchIssues();
-  }, [page]);
+  }, [page, user]);
 
-  const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  };
 
   const handleResolve = async (id, index) => {
     Alert.alert(
       "Confirm Resolution",
       "Are you sure you want to resolve this issue?",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "OK",
           onPress: async () => {
             try {
-              const res = await updateIssue(id, { status: "resolved" })
+              const res = await updateIssue(id, { status: "resolved" });
               if (res.success) {
-                setIssues((prevIssues) => {
-                  const updatedIssues = [...prevIssues];
-                  updatedIssues[index] = {
-                    ...updatedIssues[index],
-                    status: "resolved",
-
-                  };
-                  return updatedIssues;
-                });
-
-                Alert.alert("Success", "Issue marked as resolved.");
+                const updatedIssues = [...issues];
+                updatedIssues[index].status = "resolved";
+                setIssues(updatedIssues);
+                Alert.alert("Success", "Issue resolved successfully.");
               } else {
-                Alert.alert("Error", "Failed to resolve the issue. Please try again.");
+                Alert.alert("Error", "Failed to resolve the issue.");
               }
             } catch (error) {
-              console.error("Error updating issue status:", error);
-              Alert.alert("Error", "Failed to update the issue status.");
+              console.error("Error resolving issue:", error);
+              Alert.alert("Error", "Unable to resolve the issue.");
             }
           },
         },
@@ -134,33 +148,23 @@ const AllComplaints = () => {
       "Confirm Forwarding",
       "Are you sure you want to forward this issue?",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "OK",
           onPress: async () => {
             try {
-              const res = await updateIssue(id, { status: "forwarded" })
-
+              const res = await updateIssue(id, { status: "forwarded" });
               if (res.success) {
-                setIssues((prevIssues) => {
-                  const updatedIssues = [...prevIssues];
-                  updatedIssues[index] = {
-                    ...updatedIssues[index],
-                    status: "forwarded",
-                  };
-                  return updatedIssues;
-                });
-
+                const updatedIssues = [...issues];
+                updatedIssues[index].status = "forwarded";
+                setIssues(updatedIssues);
                 Alert.alert("Success", "Issue forwarded successfully.");
               } else {
-                Alert.alert("Error", "Failed to forward the issue. Please try again.");
+                Alert.alert("Error", "Failed to forward the issue.");
               }
             } catch (error) {
               console.error("Error forwarding issue:", error);
-              Alert.alert("Error", "Failed to forward the issue.");
+              Alert.alert("Error", "Unable to forward the issue.");
             }
           },
         },
@@ -168,10 +172,37 @@ const AllComplaints = () => {
     );
   };
 
-  const openIssueModal = (issue) => {
-    setSelectedIssue(issue);
+  const openIssueModal = async (issue) => {
     setModalVisible(true);
+    setModalLoading(true);
+
+    try {
+      // Fetch the student data for the college ID
+      const student = await getStudentById(issue.userId);
+      console.log(student)
+      console.log(student.success)
+      if (student.success) {
+        // If successful, add the collegeId to the issue object
+        console.log(student)
+        console.log(student.studentData)
+        setSelectedIssue({
+          ...issue,
+          collegeId: student.student.collegeId,
+        });
+      } else {
+        console.warn("Failed to fetch college ID:", student.message);
+        // Set the issue without the collegeId if fetching failed
+        setSelectedIssue(issue);
+      }
+    } catch (error) {
+      console.error("Error fetching college ID:", error);
+      // Set the issue without the collegeId in case of an error
+      setSelectedIssue(issue);
+    } finally {
+      setModalLoading(false);
+    }
   };
+
 
   const closeModal = () => {
     setModalVisible(false);
@@ -179,20 +210,16 @@ const AllComplaints = () => {
   };
 
   const handleRefresh = () => {
-    setPage(1);  // Reset pagination
-    setIssues([]);  // Clear the issues list
-    fetchIssues();  // Fetch issues again
+    fetchIssues(true);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>All Complaints</Text>
-
       <FlatList
         data={issues}
         renderItem={({ item, index }) => (
           <IssueItem
-            key={item.id}
             id={item.id}
             title={item.description}
             status={item.status}
@@ -201,24 +228,25 @@ const AllComplaints = () => {
             onPress={() => openIssueModal(item)}
           />
         )}
-        keyExtractor={(item) => item.id}
-        onEndReached={handleLoadMore}
+        keyExtractor={(item) => item.id.toString()}
+        onEndReached={() => setPage((prev) => prev + 1)}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
-          loading ? <ActivityIndicator size="large" color="#007bff" /> : null
+          loading && <ActivityIndicator size="large" color="#007bff" />
         }
       />
-
       <Modal
         visible={modalVisible}
         onRequestClose={closeModal}
+        transparent
         animationType="slide"
-        transparent={true}
       >
         <TouchableWithoutFeedback onPress={closeModal}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              {selectedIssue && (
+              {modalLoading ? (
+                <ActivityIndicator size="large" color="#007bff" />
+              ) : selectedIssue ? (
                 <>
                   <Text style={styles.modalTitle}>Issue Details</Text>
                   <Text style={styles.modalContent}>
@@ -233,6 +261,26 @@ const AllComplaints = () => {
                     <Text style={styles.modalSubTitle}>Mess No: </Text>
                     {selectedIssue.messNo}
                   </Text>
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Student ID: </Text>
+                    {selectedIssue.collegeId}
+                  </Text>
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Created At: </Text>
+                    {selectedIssue.createdAt
+                      ? new Date(
+                          selectedIssue.createdAt.seconds * 1000
+                        ).toLocaleString()
+                      : "N/A"}
+                  </Text>
+                  {selectedIssue.image ? (
+                    <Image
+                      source={{ uri: selectedIssue.image }}
+                      style={styles.modalImage}
+                    />
+                  ) : (
+                    <Text style={styles.noImageText}>No Image Available</Text>
+                  )}
                   <TouchableOpacity
                     onPress={closeModal}
                     style={styles.modalCloseButton}
@@ -240,21 +288,11 @@ const AllComplaints = () => {
                     <Text style={styles.modalCloseText}>Close</Text>
                   </TouchableOpacity>
                 </>
-              )}
+              ) : null}
             </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {hasMore && !loading && (
-        <TouchableOpacity
-          onPress={handleLoadMore}
-          style={styles.loadMoreButton}
-        >
-          <Text style={styles.loadMoreText}>Load More</Text>
-        </TouchableOpacity>
-      )}
-
       <RefreshButton onRefresh={handleRefresh} />
     </View>
   );
@@ -353,6 +391,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
   },
+  noImageText: {
+    color: "#888",
+    fontStyle: "italic",
+  },
+  modalImage: {
+    width: "100%",
+    height: 200,
+    resizeMode: "cover",
+    borderRadius: 10,
+    marginBottom: 15,
+  },
   modalCloseText: {
     color: "#fff",
     fontWeight: "bold",
@@ -367,5 +416,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
 
 export default AllComplaints;

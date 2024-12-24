@@ -65,7 +65,7 @@ const LoginPage = ({ navigation }) => {
         case "coordinator":
           navigation.replace("Coordinator");
           break;
-        case "mess_supervisor":
+        case "supervisor":
           navigation.replace("Supervisor");
           break;
         case "authority":

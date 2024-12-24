@@ -63,7 +63,7 @@ export const registerSupervisor = async ({ name, mobileNo, email, password }) =>
 };*/
 
 // Register Supervisor
-export const registerSupervisor = async (name, mobileNo, email, password) => {
+export const registerSupervisor = async (name, mobileNo, email, password,mess) => {
   try {
     // Validate required fields
     if (!name || !mobileNo || !email || !password) {
@@ -110,6 +110,7 @@ export const registerSupervisor = async (name, mobileNo, email, password) => {
       name,
       mobileNo,
       userId: newUserId,
+      messNo:mess,
       createdAt: Timestamp.now(),
     };
     await setDoc(supervisorDocRef, supervisorData);
@@ -125,7 +126,63 @@ export const registerSupervisor = async (name, mobileNo, email, password) => {
     return { success: false, error: err.message };
   }
 };
+export async function getStudentsByMessId(messId) {
+  try {
+    if (!messId) {
+      throw new Error("Mess ID is required.");
+    }
 
+    // Step 1: Fetch "setofmr" from the "mess" collection
+    const messDocRef = doc(firestore, "mess", messId);
+    const messDoc = await getDoc(messDocRef);
+
+    if (!messDoc.exists()) {
+      throw new Error('No mess found with messId: ${messId}');
+    }
+
+    const messData = messDoc.data();
+    const setofmr = messData.setofmr;
+
+    if (!Array.isArray(setofmr) || setofmr.length === 0) {
+      throw new Error("No representative emails found in the mess collection.");
+    }
+
+    // Step 2: Fetch "userId" array from the "users" collection based on emails
+    const usersRef = collection(firestore, "users");
+    const usersQuery = query(usersRef, where("email", "in", setofmr));
+    const usersSnapshot = await getDocs(usersQuery);
+
+    if (usersSnapshot.empty) {
+      throw new Error("No users found for the given representative emails.");
+    }
+
+    const userIds = usersSnapshot.docs.map((doc) => doc.data().userId);
+
+    if (userIds.length === 0) {
+      throw new Error("No userIds found for the given representative emails.");
+    }
+
+    // Step 3: Fetch student details from the "Student" collection
+    const studentsRef = collection(firestore, "Student");
+    const studentsQuery = query(studentsRef, where("userId", "in", userIds));
+    const studentsSnapshot = await getDocs(studentsQuery);
+
+    if (studentsSnapshot.empty) {
+      throw new Error("No students found for the given userIds.");
+    }
+
+    // Map and return student details
+    const students = studentsSnapshot.docs.map((doc) => ({
+      id: doc.id, // Document ID
+      ...doc.data(), // All student details
+    }));
+
+    return { success: true, students };
+  } catch (err) {
+    console.error("Error fetching students by Mess ID:", err.message);
+    return { success: false, error: err.message };
+  }
+}
 // Get All Supervisors
 export const getAllSupervisors = async () => {
   try {
@@ -359,7 +416,7 @@ export const getSupervisorByUserId = async (userId) => {
     const supervisorDoc = snapshot.docs[0];
     const supervisorData = supervisorDoc.data();
 
-    return { success: true, supervisorId: supervisorData.supervisorId };
+    return { success: true, supervisorData };
   } catch (err) {
     console.error(err);
     return { success: false, error: err.message };

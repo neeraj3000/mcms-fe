@@ -276,6 +276,15 @@ const IssuesComponent = ({ mode = "none" }) => {
                   <Text style={styles.modalLabel}>Mess No:</Text>{" "}
                   {selectedIssue.messNo}
                 </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Created At:</Text>{" "}
+                  {selectedIssue.createdAt
+                    ? new Date(
+                        selectedIssue.createdAt.seconds * 1000
+                      ).toLocaleString()
+                    : "N/A"}
+                </Text>
+
                 {selectedIssue.image ? (
                   <Image
                     source={{ uri: selectedIssue.image }}

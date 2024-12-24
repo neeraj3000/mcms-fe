@@ -264,7 +264,7 @@ export const getStudentById = async (studentId) => {
       const studentsRef = collection(firestore, 'Student');
       const studentQuery = query(studentsRef, where('userId', '==', parseInt(studentId)));
       const snapshot = await getDocs(studentQuery);
-  
+      
       if (snapshot.empty) {
         throw new Error('Student not found');
       }
@@ -606,3 +606,31 @@ export const getStudentsByGender = async (gender) => {
     }
   };
   
+
+  // Get Mess Numbers by User IDs
+// Get Users by User IDs
+export async function getUsersByUserIds(userIds) {
+  try {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      throw new Error('An array of User IDs is required.');
+    }
+
+    const usersRef = collection(firestore, 'users');
+    const snapshot = await getDocs(query(usersRef, where('userId', 'in', userIds)));
+
+    if (snapshot.empty) {
+      throw new Error('No users found for the given User IDs.');
+    }
+
+    // Map the documents to their data
+    const users = snapshot.docs.map((doc) => ({
+      id: doc.id, // Document ID
+      ...doc.data(), // Document data
+    }));
+
+    return { success: true, users };
+  } catch (err) {
+    console.error('Error getting users by User IDs:', err);
+    return { success: false, error: err.message };
+  }
+}

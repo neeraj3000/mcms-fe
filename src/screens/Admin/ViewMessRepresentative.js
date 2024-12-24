@@ -14,7 +14,8 @@ import {
   deleteRepresentativeById,
   getRepresentativesByMessNo,
   getStudentsByUserIds,
-} from "../../../backend/representativesnew"; // Import the required functions
+} from "../../../backend/representativesnew";
+import { getUsersByUserIds } from "../../../backend/studentnew"; // Use named export
 
 const ViewMessRepresentatives = () => {
   const [messes, setMesses] = useState([]);
@@ -23,17 +24,26 @@ const ViewMessRepresentatives = () => {
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Fetch all messes when the component mounts
-  const fetchMesses = async () => {
-    const { success, messList, message } = await getAllMess();
-    if (success) {
-      setMesses(messList);
-    } else {
-      console.error(message);
-    }
-  };
+  useEffect(() => {
+    const fetchMesses = async () => {
+      setLoading(true);
+      try {
+        const { success, messList, message } = await getAllMess();
+        if (success) {
+          setMesses(messList);
+        } else {
+          alert(`Error fetching messes: ${message}`);
+        }
+      } catch (error) {
+        alert("An error occurred while fetching messes.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Fetch representatives for the selected mess
+    fetchMesses();
+  }, []);
+
   const fetchRepresentatives = async () => {
     if (!selectedMess) {
       alert("Please select a mess first.");
@@ -43,69 +53,73 @@ const ViewMessRepresentatives = () => {
     setLoading(true);
     setRepresentatives([]);
 
-    const { success, representatives, error } =
-      await getRepresentativesByMessNo(selectedMess);
-    if (success) {
-      // Extract userIds from representatives
-      const userIds = representatives
-        .map((rep) => rep.userId)
-        .filter((userId) => userId); // Filter out undefined or invalid userIds
+    try {
+      const { success, representatives, error } =
+        await getRepresentativesByMessNo(selectedMess);
 
-      if (userIds.length === 0) {
-        alert("No valid userIds found for the representatives.");
-        setLoading(false);
-        return;
-      }
+      if (success) {
+        const userIds = representatives
+          .map((rep) => rep.userId)
+          .filter(Boolean);
 
-      // Now fetch detailed student information using the valid userIds
-      const studentResponse = await getStudentsByUserIds(userIds);
+        const [studentResponse, userResponse] = await Promise.all([
+          getStudentsByUserIds(userIds),
+          getUsersByUserIds(userIds),
+        ]);
 
-      if (studentResponse.success) {
-        const enrichedRepresentatives = representatives.map((rep) => {
-          const student = studentResponse.students.find(
-            (student) => student.userId === rep.userId
-          );
-          return {
-            ...rep,
-            mobileNo: student?.mobileNo,
-            gender: student?.gender,
-            batch: student?.batch,
-          };
-        });
+        if (studentResponse.success && userResponse.success) {
+          const enrichedRepresentatives = representatives.map((rep) => {
+            const student = studentResponse.students.find(
+              (student) => student.userId === rep.userId
+            );
+            const user = userResponse.users.find(
+              (user) => user.userId === rep.userId
+            );
 
-        setRepresentatives(enrichedRepresentatives); // Set the representatives with additional details
+            return {
+              ...rep,
+              name: student?.name || "N/A",
+              mobileNo: student?.mobileNo || "N/A",
+              gender: student?.gender || "N/A",
+              batch: student?.batch || "N/A",
+              email: user?.email || "N/A",
+              role: user?.role || "N/A",
+            };
+          });
+
+          setRepresentatives(enrichedRepresentatives);
+          setIsModalVisible(true);
+        } else {
+          alert("Error fetching student/user data.");
+        }
       } else {
-        alert(`Error fetching student details: ${studentResponse.error}`);
+        alert(`Error fetching representatives: ${error}`);
       }
-
-      setIsModalVisible(true); // Open the modal after fetching data
-    } else {
-      alert(`Error: ${error}`);
+    } catch (error) {
+      alert("An error occurred while fetching representatives.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  useEffect(() => {
-    fetchMesses();
-  }, []);
-
-  // Handle deleting a representative
   const handleDeleteRepresentative = async (representativeId) => {
-    const { success, message } = await deleteRepresentativeById(
-      representativeId
-    );
-    if (success) {
-      setRepresentatives(
-        representatives.filter((rep) => rep.mrId !== representativeId)
+    try {
+      const { success, message } = await deleteRepresentativeById(
+        representativeId
       );
-      alert("Representative deleted successfully.");
-    } else {
-      alert(`Error deleting representative: ${message}`);
+      if (success) {
+        setRepresentatives((prev) =>
+          prev.filter((rep) => rep.mrId !== representativeId)
+        );
+        alert("Representative deleted successfully.");
+      } else {
+        alert(`Error deleting representative: ${message}`);
+      }
+    } catch (error) {
+      alert("An error occurred while deleting the representative.");
     }
   };
 
-  // Close the modal
   const closeModal = () => {
     setIsModalVisible(false);
   };
@@ -114,16 +128,12 @@ const ViewMessRepresentatives = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>View Mess Representatives</Text>
 
-      {/* Dropdown for selecting a mess */}
       <View style={styles.dropdownContainer}>
         <Text style={styles.label}>Select Mess</Text>
         <Picker
           selectedValue={selectedMess}
           style={styles.dropdown}
-          onValueChange={(value) => {
-            console.log("Selected Mess:", value); // Debugging log
-            setSelectedMess(value);
-          }}
+          onValueChange={(value) => setSelectedMess(value)}
         >
           <Picker.Item label="Select Mess" value="" />
           {messes.map((mess) => (
@@ -136,14 +146,8 @@ const ViewMessRepresentatives = () => {
         </Picker>
       </View>
 
-      {/* Button to fetch representatives */}
-      <Button
-        title="Fetch Representatives"
-        onPress={fetchRepresentatives}
-        color="#007BFF"
-      />
+      <Button title="Fetch Representatives" onPress={fetchRepresentatives} />
 
-      {/* Modal for displaying representatives */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -156,50 +160,21 @@ const ViewMessRepresentatives = () => {
               <ActivityIndicator size="large" color="#007BFF" />
             ) : (
               <>
-                <Text style={styles.modalTitle}>
-                  Representatives of Mess {selectedMess}
-                </Text>
+                <Text style={styles.modalTitle}>Representatives</Text>
                 {representatives.length > 0 ? (
-                  representatives.map((representative, index) => (
+                  representatives.map((rep, index) => (
                     <View key={index} style={styles.representativeCard}>
-                      <Text style={styles.representativeText}>
-                        Name: {representative.name}
-                      </Text>
-                      <Text style={styles.representativeText}>
-                        Email: {representative.email}
-                      </Text>
-                      <Text style={styles.representativeText}>
-                        Role: {representative.role}
-                      </Text>
-                      <Text style={styles.representativeText}>
-                        Mobile No: {representative.mobileNo}
-                      </Text>
-                      <Text style={styles.representativeText}>
-                        Gender: {representative.gender}
-                      </Text>
-                      <Text style={styles.representativeText}>
-                        Batch: {representative.batch}
-                      </Text>
-                      <View style={styles.actionButtons}>
-                        <Button
-                          title="Edit"
-                          onPress={() =>
-                            alert("Edit feature not implemented yet")
-                          }
-                        />
-                        <Button
-                          title="Delete"
-                          onPress={() =>
-                            handleDeleteRepresentative(representative.mrId)
-                          }
-                        />
-                      </View>
+                      <Text>Name: {rep.name}</Text>
+                      <Text>Email: {rep.email}</Text>
+                      <Text>Role: {rep.role}</Text>
+                      <Button
+                        title="Delete"
+                        onPress={() => handleDeleteRepresentative(rep.mrId)}
+                      />
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.noDataText}>
-                    No representatives found.
-                  </Text>
+                  <Text>No representatives found.</Text>
                 )}
                 <Button title="Close" onPress={closeModal} />
               </>
