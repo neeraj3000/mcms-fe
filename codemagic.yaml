@@ -1,33 +1,34 @@
 workflows:
   build:
     name: Build APK for React Native
-    steps:
+    instance_type: macos-latest # You can use `macos-latest` or another instance type based on your requirements
+    scripts:
       # Step 1: Install dependencies
       - name: Install dependencies
-        run: |
+        script: |
           # Install Node.js
           nvm install 16
           nvm use 16
 
-          # Install dependencies
+          # Install dependencies with Yarn
           yarn install
 
       # Step 2: Set up Android environment
       - name: Set up Android environment
-        run: |
-          echo "sdk.dir=/opt/android-sdk-linux" > local.properties
+        script: |
+          echo "sdk.dir=/opt/android-sdk-linux" > android/local.properties
           mkdir -p ~/.gradle
           echo "org.gradle.daemon=true" > ~/.gradle/gradle.properties
           echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
 
       # Step 3: Build the APK
       - name: Build APK
-        run: |
-          # Clean the project and build the APK
-          cd android && ./gradlew clean
-          cd android && ./gradlew assembleRelease
+        script: |
+          cd android
+          ./gradlew clean
+          ./gradlew assembleRelease
 
-      # Step 4: Upload the APK to Codemagic artifacts
+      # Step 4: Upload the APK
       - name: Upload APK
         archive:
           path: "android/app/build/outputs/apk/release/app-release.apk"
