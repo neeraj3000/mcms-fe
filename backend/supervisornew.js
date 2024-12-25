@@ -9,6 +9,7 @@ import {
   limit,
   doc,
   setDoc,
+  getDoc,
   updateDoc,
   deleteDoc,
   Timestamp,

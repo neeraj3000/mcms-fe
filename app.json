@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "mess",
-    "slug": "mess-jtamjyq2zlrbjhxutlzgc",
+    "slug": "mcms",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -47,9 +47,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "13306d7b-6c93-4f98-8263-a9ddb3f2d99f"
+        "projectId": "1229ddc8-418d-47b2-9d65-9ce5e2586730"
       }
     },
-    "owner": "starlord78"
+    "owner": "neeraj3000"
   }
 }

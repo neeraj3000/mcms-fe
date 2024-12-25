@@ -31,13 +31,17 @@ const InspectionReports = () => {
       if (response.success) {
         setReports(response.inspectionReports);
 
-        let headers = [];
+        let headers = ["Date"]; // Include "Date" as the first column header
         let rows = [];
 
         // Loop through the reports to build headers and rows
         for (let i = 0; i < response.inspectionReports.length; i++) {
           let obj = response.inspectionReports[i].options; // Get the options from each report
           let row = [];
+
+          // Add the date for each report
+          
+          row.push(response.inspectionReports[i].inspectionDate); // Assuming 'date' field exists
 
           // For the first row, we need to populate headers
           if (i === 0) {
@@ -80,15 +84,15 @@ const InspectionReports = () => {
 
     // Add header row
     if (reports.length > 0) {
-      const columns = Object.keys(reports[0]).map((key) => ({
-        header: key.replace(/([A-Z])/g, " $1").toUpperCase(),
-        key,
+      const columns = headers.map((header) => ({
+        header,
+        key: header,
         width: 25,
       }));
       worksheet.columns = columns;
 
       // Add rows
-      reports.forEach((report) => worksheet.addRow(report));
+      rows.forEach((row) => worksheet.addRow(row));
 
       // Write Excel to file
       const fileUri = FileSystem.documentDirectory + "InspectionReports.xlsx";

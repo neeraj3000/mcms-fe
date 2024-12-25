@@ -124,7 +124,7 @@ const FeedbackForm = () => {
       ) : !isFeedbackEnabled ? (
         <View style={styles.centeredMessage}>
           <Text style={styles.centeredMessageText}>
-            You have already submitted the feedback.
+            You have already submitted the feedback/No feedback at this time.
           </Text>
         </View>
       ) : (

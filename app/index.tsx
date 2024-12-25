@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, Image, StyleSheet, ActivityIndicator,Animated } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { SessionProvider } from "../src/SessionContext";
-import * as SplashScreen from "expo-splash-screen";
 
 import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
@@ -14,99 +14,131 @@ import Director from "../app/Director";
 import AdministrativeOfficer from "../src/screens/AdministrativeOfficer/AdministrativeOfficer";
 import Supervisor from "./Supervisor";
 import AuthorityNavigate from "./Authority";
-import { Text, View } from "react-native";
-
-// import { registerForPushNotificationsAsync } from "../src/utils/registerNotifications";
 
 const Stack = createStackNavigator();
+
+// Splash Screen Component
+const SplashScreen = () => {
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Initial opacity is 0
+
+  useEffect(() => {
+    // Fade-in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1, // Fully visible
+      duration: 2000, // Duration in milliseconds
+      useNativeDriver: true, // Use native driver for better performance
+    }).start();
+  }, [fadeAnim]);
+
+  return (
+    <View style={styles.splashContainer}>
+      <Animated.Image
+        source={require("../assets/images/splash2.png")} // Replace with your image file path
+        style={[styles.fullScreenImage, { opacity: fadeAnim }]} // Bind opacity to fadeAnim
+      />
+    </View>
+  );
+};
+
+
+
 
 const App = () => {
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
-    async function prepareApp() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-        // Perform any async setup tasks here
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setAppIsReady(true);
-        await SplashScreen.hideAsync();
-      }
-    }
+    const prepareApp = async () => {
+      // Simulate a delay for loading resources
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      setAppIsReady(true);
+    };
 
     prepareApp();
   }, []);
 
   if (!appIsReady) {
-    return null; // Optionally, you can return a loading spinner here
+    return <SplashScreen />;
   }
 
   return (
     <SessionProvider>
-      {/* <View>
-        {token ? (
-          <Text>Expo Push Token: {token}</Text> // Print the token if available
-        ) : (
-          <Text>Requesting push notification token...</Text> // Loading message
-        )}
-      </View> */}
-      <Stack.Navigator initialRouteName="Login">
-        <Stack.Screen
-          name="Login"
-          component={LoginPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="StudentPage"
-          component={StudentPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="MRPage"
-          component={MRPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Register"
-          component={RegisterPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Admin"
-          component={AdminPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Coordinator"
-          component={CoordinatorPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Director"
-          component={Director}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="AO"
-          component={AdministrativeOfficer}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Supervisor"
-          component={Supervisor}
-          options={{ headerShown: false }}
-        />
-
-        <Stack.Screen
-          name="Authority"
-          component={AuthorityNavigate}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen
+            name="Login"
+            component={LoginPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="StudentPage"
+            component={StudentPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="MRPage"
+            component={MRPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Register"
+            component={RegisterPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Admin"
+            component={AdminPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Coordinator"
+            component={CoordinatorPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Director"
+            component={Director}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="AO"
+            component={AdministrativeOfficer}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Supervisor"
+            component={Supervisor}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Authority"
+            component={AuthorityNavigate}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
     </SessionProvider>
   );
 };
+
+// Styles for Splash Screen
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+  },
+  fullScreenImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover", // Ensures the image fills the entire screen
+  },
+
+  appName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 20,
+  },
+  loader: {
+    marginTop: 10,
+  },
+});
 
 export default App;

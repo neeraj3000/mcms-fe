@@ -31,6 +31,7 @@ const QualityInspectionPage = () => {
   const [image, setImage] = useState(null);
   const [inspectionAllowed, setInspectionAllowed] = useState(false); // Inspection status
   const [refreshKey, setRefreshKey] = useState(0); // Key to trigger re-renders
+  const [date, setDate] = useState("");
 
   // Fetch inspection options
   useEffect(() => {
@@ -58,6 +59,7 @@ const QualityInspectionPage = () => {
           if (response.success) {
             const fetchedOptions = response.options;
             setOptions(fetchedOptions);
+            setDate(fetchedOptions[fetchedOptions.length-1]);
             setRatings(
               fetchedOptions.reduce((acc, option) => {
                 acc[option] = 1; // Default rating of 1
@@ -130,7 +132,8 @@ const QualityInspectionPage = () => {
         res.mrId,
         messNo,
         image,
-        ratings
+        ratings,
+        date,
       );
 
       if (response.success) {
@@ -177,9 +180,11 @@ const QualityInspectionPage = () => {
         editable={false} // Mess number is fetched automatically
       />
 
-      {options.map((category) => (
+      {options.slice(0, options.length - 1).map((category) => (
         <View key={category} style={styles.categoryContainer}>
           <Text style={styles.categoryText}>{category}</Text>
+
+          {/* Render RNPickerSelect for all options except the last one */}
           <RNPickerSelect
             onValueChange={(value) => handleRatingChange(category, value)}
             items={[...Array(10).keys()].map((num) => ({
@@ -222,6 +227,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
   },
+  nonEditableInput: {
+    fontSize: 16,
+    color: "#333",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    backgroundColor: "#f5f5f5", // Optional for a "disabled" look
+  },
+
   noticeText: {
     fontSize: 18,
     textAlign: "center",

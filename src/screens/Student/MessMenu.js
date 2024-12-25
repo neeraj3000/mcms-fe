@@ -20,7 +20,7 @@ const MessMenupage = () => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
-      useNativeDriver: true,
+      useNativeDriver: true,  
     }).start();
   }, [fadeAnim]);
 

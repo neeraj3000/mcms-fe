@@ -167,7 +167,7 @@ async function getNextInspectionId() {
 // Create Inspection Reports
 // Create Inspection Reports
 // Create Inspection Reports
-export async function createInspectionReport(mrId, messNo, image, options) {
+export async function createInspectionReport(mrId, messNo, image, options, date) {
   try {
     const inspectionId = await getNextInspectionId();
     console.log(typeof (mrId));
@@ -197,7 +197,7 @@ export async function createInspectionReport(mrId, messNo, image, options) {
       mrId,
       messNo,
       image: imageUrl, // If no image is uploaded, this will be null
-      inspectionDate: currentDate,
+      inspectionDate: date,
       options,
       createdAt: currentDate,
       updatedAt: currentDate,

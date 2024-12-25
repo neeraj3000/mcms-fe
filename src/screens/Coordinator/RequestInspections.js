@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -32,6 +32,13 @@ const RequestInspection = () => {
   ]);
   const [newOption, setNewOption] = useState("");
   const [confirmationVisible, setConfirmationVisible] = useState(false);
+  const [date, setDate] = useState(""); // State for inspection date
+
+  useEffect(() => {
+    // Automatically set today's date when the component loads
+    const today = new Date().toISOString().split("T")[0];
+    setDate(today);
+  }, []);
 
   const messOptions = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
@@ -57,16 +64,23 @@ const RequestInspection = () => {
     if (selectedMess && description && selectedOptions.length > 0) {
       try {
         const messId = parseInt(selectedMess);
-        console.log(messId, description, selectedOptions);
+        console.log(messId, description, selectedOptions, date);
 
         const result = await updateInspectionStatusAndDescription(
           messId,
           description
         );
         console.log(result);
+        console.log(selectedOptions)
+        const optionsWithDate = [
+          ...selectedOptions,
+          date,
+        ];
+        console.log("heyy")
+        console.log(optionsWithDate)
         const response = await addMultipleInspectOptions(
           messId.toString(),
-          selectedOptions
+          optionsWithDate,
         );
         console.log(response);
         if (result.success && response.success) {
@@ -83,7 +97,7 @@ const RequestInspection = () => {
       }
     } else {
       alert(
-        "Please select a mess, enter a description, and select at least one inspection criterion."
+        "Please select a mess, enter a description, and inspection criteria."
       );
     }
   };
@@ -93,7 +107,7 @@ const RequestInspection = () => {
       setConfirmationVisible(true);
     } else {
       alert(
-        "Please select a mess, enter a description, and select at least one inspection criterion."
+        "Please select a mess, enter a description, and inspection criteria."
       );
     }
   };
@@ -125,6 +139,11 @@ const RequestInspection = () => {
           onChangeText={(text) => setDescription(text)}
           multiline
         />
+      </View>
+
+      <View style={styles.formItem}>
+        <Text style={styles.label}>Inspection Date:</Text>
+        <Text style={styles.dateField}>{date}</Text> {/* Non-editable field */}
       </View>
 
       <View style={styles.formItem}>
@@ -167,8 +186,8 @@ const RequestInspection = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Confirm Request</Text>
             <Text style={styles.modalText}>
-              Are you sure you want to request an inspection with the selected
-              options?
+              Are you sure you want to request an inspection on {date} with the
+              selected options?
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -193,6 +212,16 @@ const RequestInspection = () => {
 
 const styles = StyleSheet.create({
   // Other styles
+  dateField: {
+    fontSize: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "gray",
+    borderRadius: 5,
+    backgroundColor: "#e9ecef",
+    color: "#6c757d",
+  },
+
   container: {
     padding: 20,
     backgroundColor: "#f8f8f8",

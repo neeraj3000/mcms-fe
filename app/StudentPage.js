@@ -15,6 +15,7 @@ import FeedbackForm from "../src/screens/Student/FeedbackScreen";
 import Issues from "../src/screens/Student/Issues";
 import ProfilePage from "../src/screens/Student/ProfilePage";
 import MessMenuPage from "../src/screens/Student/MessMenu";
+import GuidelinesPage from "../src/screens/Student/Guidelines";
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -111,6 +112,10 @@ const StudentPage = ({ navigation }) => {
             iconName = focused ? "restaurant" : "restaurant-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
+          } else if (route.name === "Guidelines") {
+            iconName = focused
+              ? "information-circle"
+              : "information-circle-outline"; // Guidelines icon
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -138,6 +143,24 @@ const StudentPage = ({ navigation }) => {
           headerTitleAlign: "center", // Optional: Center the title if needed
         })}
       />
+      <Tab.Screen
+        name="Guidelines"
+        component={GuidelinesPage}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerLeft: () => (
+            <Ionicons
+              name="arrow-back" // Contextual icon for guidelines
+              size={24}
+              color="black"
+              style={{ marginLeft: 20 }} // Apply margin directly here
+              onPress={() => navigation.goBack()} // Ensure navigation is passed correctly
+            />
+          ),
+          headerTitleAlign: "center", // Optional: Center the title if needed
+        })}
+      />
+
       <Tab.Screen
         name="Profile"
         component={ProfilePage}

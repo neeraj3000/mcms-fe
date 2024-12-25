@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useSession } from "@/src/SessionContext";
@@ -13,10 +14,12 @@ import {
   getSupervisorByUserId,
   getStudentsByMessId,
 } from "../../../backend/supervisornew";
-
+import { getAllCoordinators } from "../../../backend/coordinatornew";
 export default function ContactMessCoordinator() {
   const [messRepresentatives, setMessRepresentatives] = useState([]);
   const [mess, setMess] = useState(null);
+  const [coordinators, setCoordinators] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const { user } = useSession();
 
@@ -41,9 +44,22 @@ export default function ContactMessCoordinator() {
     }
   };
 
+  const fetchCoordinators = async () => {
+    try {
+      const coordinatorsResponse = await getAllCoordinators();
+      if (coordinatorsResponse.success) {
+        setCoordinators(coordinatorsResponse.coordinators || []);
+      }
+    } catch (error) {
+      console.error("Error fetching coordinators:", error.message);
+    }
+  };
+
   useEffect(() => {
     if (user?.id) {
-      fetchMessAndRepresentatives();
+      Promise.all([fetchMessAndRepresentatives(), fetchCoordinators()])
+        .catch((error) => console.error("Error during data fetching:", error))
+        .finally(() => setLoading(false));
     }
   }, [user]);
 
@@ -55,27 +71,46 @@ export default function ContactMessCoordinator() {
     Linking.openURL(`mailto:${email}`);
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#007BFF" />
+        <Text style={styles.loaderText}>Loading details...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Contact Mess Coordinator</Text>
 
-      <View style={styles.iconContainer}>
-        <TouchableOpacity
-          onPress={() => makeCall("1234567890")}
-          style={styles.iconWrapper}
-        >
-          <Ionicons name="call" size={40} color="#007BFF" />
-          <Text style={styles.iconText}>Call</Text>
-        </TouchableOpacity>
+      {coordinators.length > 0 ? (
+        coordinators.map((coordinator, index) => (
+          <View key={index} style={styles.repContainer}>
+            <Text style={styles.repName}>{coordinator.name}</Text>
 
-        <TouchableOpacity
-          onPress={() => sendEmail("messcoordinator@example.com")}
-          style={styles.iconWrapper}
-        >
-          <Ionicons name="mail" size={40} color="#007BFF" />
-          <Text style={styles.iconText}>Mail</Text>
-        </TouchableOpacity>
-      </View>
+            <View style={styles.contactIcons}>
+              <TouchableOpacity
+                onPress={() => makeCall(coordinator.phone)}
+                style={styles.contactIconWrapper}
+              >
+                <Ionicons name="call" size={30} color="#007BFF" />
+                <Text style={styles.iconText}>Call</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => sendEmail(coordinator.email)}
+                style={styles.contactIconWrapper}
+              >
+                <Ionicons name="mail" size={30} color="#007BFF" />
+                <Text style={styles.iconText}>Mail</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.noDataText}>No coordinators found.</Text>
+      )}
 
       <Text style={styles.subHeader}>Contact Mess Representatives</Text>
       {messRepresentatives.length > 0 ? (
@@ -110,6 +145,7 @@ export default function ContactMessCoordinator() {
 }
 
 const styles = StyleSheet.create({
+  // Same styles as before
   container: {
     flexGrow: 1,
     padding: 20,
@@ -158,6 +194,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     color: "#333",
+    marginBottom: 5,
+  },
+  repDetails: {
+    fontSize: 16,
+    color: "#666",
     marginBottom: 10,
   },
   contactIcons: {
@@ -173,5 +214,16 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     marginTop: 20,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f8f8",
+  },
+  loaderText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#333",
   },
 });
