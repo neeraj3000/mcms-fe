@@ -44,14 +44,18 @@ const LoginPage = ({ navigation }) => {
         id: user.userId, // Store the userId
       });
 
-      // Register for push notifications
-      await registerForPushNotificationsAsync(user.userId, user.role)
-        .then((token) => console.log("Push notification token:", token))
-        .catch((err) =>
-          console.error("Error during push notification registration:", err)
-        );
+      // Register for push notifications (only once)
+      try {
+        await registerForPushNotificationsAsync(user.userId, user.role)
+          .then((token) => console.log("Push notification token:", token))
+          .catch((err) =>
+            console.error("Error during push notification registration:", err)
+          );
+      } catch (err) {
+        console.error("Error in registering push notifications:", err);
+      }
 
-      // Navigate based on user role
+      // Navigate based on user role (only once)
       switch (user.role) {
         case "student":
           navigation.replace("StudentPage");

@@ -83,7 +83,7 @@ const DrawerWrapper = (Component) => {
         },
       }}
     >
-      <Drawer.Screen name="Home" component={StudentHomePage} />
+      <Drawer.Screen name="Student Home" component={StudentHomePage} />
       <Drawer.Screen name="Feedback" component={FeedbackForm} />
       <Drawer.Screen name="Issues" component={Issues} />
     </Drawer.Navigator>

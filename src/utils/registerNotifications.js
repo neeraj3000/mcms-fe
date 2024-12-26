@@ -1,5 +1,6 @@
-import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import { request, PERMISSIONS } from "react-native-permissions";
 import { addPushNotificationToken } from "../../backend/PushNotificationnew";
 
 // Function to register for push notifications
@@ -21,9 +22,15 @@ export async function registerForPushNotificationsAsync(userId, category) {
       });
     }
 
-    // Request permissions for notifications
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== "granted") {
+    // Request permissions for notifications using react-native-permissions
+    let permissionStatus;
+    if (Platform.OS === "ios") {
+      permissionStatus = await request(PERMISSIONS.IOS.NOTIFICATIONS);
+    } else if (Platform.OS === "android") {
+      permissionStatus = await request(PERMISSIONS.ANDROID.NOTIFICATIONS);
+    }
+
+    if (permissionStatus !== "granted") {
       throw new Error(
         "Permission for push notifications not granted. Please enable permissions in device settings."
       );
