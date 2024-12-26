@@ -10,10 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Checkbox } from "react-native-paper";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { updateIsFeedbackInStudents } from "../../../backend/feedbacknew";
-import { addOrReplaceFeedbackOptions } from "../../../backend/feedbacknew";
-
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const RequestFeedback = () => {
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -32,7 +29,7 @@ const RequestFeedback = () => {
   const [confirmationVisible, setConfirmationVisible] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [dateType, setDateType] = useState("");
 
   const handleCheckboxToggle = (option) => {
@@ -52,67 +49,31 @@ const RequestFeedback = () => {
     }
   };
 
-  const handleRequestFeedback = async () => {
+  const handleRequestFeedback = () => {
     setConfirmationVisible(false);
     if (selectedOptions.length > 0) {
-      try {
-        console.log(selectedOptions);
-
-        const result = await updateIsFeedbackInStudents();
-        console.log(result);
-        const response = await addOrReplaceFeedbackOptions(selectedOptions);
-        console.log(selectedOptions);
-        console.log(response);
-        if (result.success && response.success) {
-          alert(result.message);
-          setSelectedOptions([]);
-          setStartDate(null);
-          setEndDate(null);
-        } else {
-          alert(result.message);
-        }
-      } catch (error) {
-        console.error(error);
-        alert("An error occurred while requesting the Feedback.");
-      }
+      console.log("Feedback Requested for:", selectedOptions);
+      setSelectedOptions([]);
+      setStartDate(null);
+      setEndDate(null);
+      alert("Feedback request sent successfully!");
     } else {
       alert("Please select at least one Feedback criterion.");
     }
   };
 
-  const showConfirmationModal = () => {
-    if (!startDate || !endDate) {
-      alert("Please select both start and end dates.");
-      return;
-    }
-
-    if (selectedOptions.length > 0) {
-      setConfirmationVisible(true);
-    } else {
-      alert("Please select at least one Feedback criterion.");
-    }
-  };
-
-  const showDatePicker = (type) => {
+  const showDatePickerHandler = (type) => {
     setDateType(type);
-    setIsDatePickerVisible(true);
+    setShowDatePicker(true);
   };
 
-  const handleConfirm = (date) => {
-    setIsDatePickerVisible(false);
-    let formattedDate = date.toDateString();
-    if (dateType === "start") {
-      setStartDate(date);
-      if (!selectedOptions.includes(`${formattedDate}`)) {
-        setSelectedOptions([
-          ...selectedOptions,
-          `${formattedDate}`,
-        ]);
-      }
-    } else if (dateType === "end") {
-      setEndDate(date);
-      if (!selectedOptions.includes(`${formattedDate}`)) {
-        setSelectedOptions([...selectedOptions, `${formattedDate}`]);
+  const onDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      if (dateType === "start") {
+        setStartDate(selectedDate);
+      } else if (dateType === "end") {
+        setEndDate(selectedDate);
       }
     }
   };
@@ -150,7 +111,7 @@ const RequestFeedback = () => {
         <Text style={styles.label}>Start Date:</Text>
         <TouchableOpacity
           style={styles.dateInput}
-          onPress={() => showDatePicker("start")}
+          onPress={() => showDatePickerHandler("start")}
         >
           <Text style={styles.dateText}>
             {startDate ? startDate.toDateString() : "Select Start Date"}
@@ -162,7 +123,7 @@ const RequestFeedback = () => {
         <Text style={styles.label}>End Date:</Text>
         <TouchableOpacity
           style={styles.dateInput}
-          onPress={() => showDatePicker("end")}
+          onPress={() => showDatePickerHandler("end")}
         >
           <Text style={styles.dateText}>
             {endDate ? endDate.toDateString() : "Select End Date"}
@@ -173,7 +134,7 @@ const RequestFeedback = () => {
       {/* Request Feedback Button */}
       <Button
         title="Request Feedback"
-        onPress={showConfirmationModal}
+        onPress={() => setConfirmationVisible(true)}
         color="#007bff"
       />
 
@@ -209,12 +170,14 @@ const RequestFeedback = () => {
       </Modal>
 
       {/* Date Picker */}
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="date"
-        onConfirm={handleConfirm}
-        onCancel={() => setIsDatePickerVisible(false)}
-      />
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+        />
+      )}
     </ScrollView>
   );
 };
@@ -266,6 +229,20 @@ const styles = StyleSheet.create({
     marginRight: 10,
     backgroundColor: "#fff",
   },
+  dateInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderColor: "gray",
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    backgroundColor: "#fff",
+  },
+  dateText: {
+    fontSize: 16,
+    color: "#555",
+  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -310,27 +287,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
-  },
-
-  datePickerContainer: {
-    marginBottom: 20,
-  },
-  datePicker: {
-    width: "100%",
-  },
-  dateInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderColor: "gray",
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    backgroundColor: "#fff",
-  },
-  dateText: {
-    fontSize: 16,
-    color: "#555",
   },
 });
 

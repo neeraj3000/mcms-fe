@@ -15,9 +15,12 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import axios from "axios";
 import { useSession } from "../../SessionContext";
 import RefreshButton from "../../components/RefreshButton";
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; 
-import {deleteIssueById, getIssuesByUserId} from "../../../backend/issuesnew"
-import { updateIssue } from "../../../backend/issuesnew";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import {
+  deleteIssueById,
+  getIssuesByUserId,
+  updateIssue,
+} from "../../../backend/issuesnew";
 
 const IssueHistory = () => {
   const [issueHistory, setIssueHistory] = useState([]);
@@ -38,7 +41,10 @@ const IssueHistory = () => {
       }
     } catch (error) {
       console.error("Error fetching issue history:", error);
-      Alert.alert("Error", "Unable to fetch issue history. Please try again later.");
+      Alert.alert(
+        "Error",
+        "Unable to fetch issue history. Please try again later."
+      );
     } finally {
       setLoading(false);
     }
@@ -81,11 +87,17 @@ const IssueHistory = () => {
         closeModal();
         Alert.alert("Success", "The issue has been updated.");
       } else {
-        Alert.alert("Error", "Unable to update the issue. Please try again later.");
+        Alert.alert(
+          "Error",
+          "Unable to update the issue. Please try again later."
+        );
       }
     } catch (error) {
       console.error("Error updating issue:", error);
-      Alert.alert("Error", "Unable to update the issue. Please try again later.");
+      Alert.alert(
+        "Error",
+        "Unable to update the issue. Please try again later."
+      );
     }
   };
 
@@ -107,7 +119,7 @@ const IssueHistory = () => {
 
   const deleteIssue = async (id) => {
     try {
-      const response = await deleteIssueById(id)
+      const response = await deleteIssueById(id);
       if (response.success) {
         setIssueHistory((prevIssues) =>
           prevIssues.filter((issue) => issue.id !== id)
@@ -115,37 +127,84 @@ const IssueHistory = () => {
         closeModal();
         Alert.alert("Success", "The issue has been deleted.");
       } else {
-        Alert.alert("Error", "Unable to delete the issue. Please try again later.");
+        Alert.alert(
+          "Error",
+          "Unable to delete the issue. Please try again later."
+        );
       }
     } catch (error) {
       console.error("Error deleting issue:", error);
-      Alert.alert("Error", "Unable to delete the issue. Please try again later.");
+      Alert.alert(
+        "Error",
+        "Unable to delete the issue. Please try again later."
+      );
     }
   };
 
+  const renderIssueItem = (issue) => (
+    <TouchableOpacity
+      key={issue.id} // Added unique key
+      style={styles.issueItem}
+      onPress={() => openModal(issue)}
+    >
+      <Text style={styles.issueCategory}>Category: {issue.category}</Text>
+      <Text
+        style={[
+          styles.issueStatus,
+          issue.status === "resolved" && styles.resolvedStatus,
+          issue.status === "pending" && styles.pendingStatus,
+          issue.status === "reraised" && styles.reraisedStatus,
+        ]}
+      >
+        Status: {issue.status}
+      </Text>
+      <Text style={styles.issueDate}>
+        Date:{" "}
+        {new Date(
+          issue.createdAt.seconds * 1000 +
+            Math.floor(issue.createdAt.nanoseconds / 1e6)
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const renderModalContent = () => {
     if (!selectedIssue) return null;
-  
+
     const handleReraise = async () => {
       try {
-        const response = await updateIssue(selectedIssue.id, {status:"reraised"})
+        const response = await updateIssue(selectedIssue.id, {
+          status: "reraised",
+        });
         if (response.success) {
           setIssueHistory((prevIssues) =>
             prevIssues.map((issue) =>
-              issue.id === selectedIssue.id ? { ...selectedIssue, status: "reraised" } : issue
+              issue.id === selectedIssue.id
+                ? { ...selectedIssue, status: "reraised" }
+                : issue
             )
           );
           closeModal();
           Alert.alert("Success", "The issue has been reraised.");
         } else {
-          Alert.alert("Error", "Unable to reraise the issue. Please try again later.");
+          Alert.alert(
+            "Error",
+            "Unable to reraise the issue. Please try again later."
+          );
         }
       } catch (error) {
         console.error("Error reraising issue:", error);
-        Alert.alert("Error", "Unable to reraise the issue. Please try again later.");
+        Alert.alert(
+          "Error",
+          "Unable to reraise the issue. Please try again later."
+        );
       }
     };
-  
+
     return (
       <ScrollView contentContainerStyle={styles.modalScrollContent}>
         <View style={styles.modalHeader}>
@@ -223,41 +282,7 @@ const IssueHistory = () => {
       </ScrollView>
     );
   };
-  
-  
-  
-  const renderIssueItem = (issue) => {
-    console.log(issue)
-    return (
-      <TouchableOpacity
-        style={styles.issueItem}
-        onPress={() => openModal(issue)}
-      >
-        <Text style={styles.issueCategory}>Category: {issue.category}</Text>
-        <Text
-          style={[
-            styles.issueStatus,
-            issue.status === "resolved" && styles.resolvedStatus,
-            issue.status === "pending" && styles.pendingStatus,
-            issue.status === "reraised" && styles.reraisedStatus,
-          ]}
-        >
-          Status: {issue.status}
-        </Text>
-        <Text style={styles.issueDate}>
-  Date:{" "}
-  {new Date(
-    issue.createdAt.seconds * 1000 + Math.floor(issue.createdAt.nanoseconds / 1e6)
-  ).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })}
-</Text>
 
-      </TouchableOpacity>
-    );
-  };
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Issue History</Text>
@@ -265,7 +290,7 @@ const IssueHistory = () => {
         <ActivityIndicator size="large" color="#007BFF" />
       ) : issueHistory.length > 0 ? (
         <ScrollView contentContainerStyle={styles.issueList}>
-          {issueHistory.map((item) =>  renderIssueItem(item))}
+          {issueHistory.map((item) => renderIssueItem(item))}
         </ScrollView>
       ) : (
         <Text style={styles.noIssuesText}>No issues reported yet.</Text>
@@ -292,10 +317,7 @@ const IssueHistory = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modal}>
-            <TouchableOpacity
-              style={styles.closeicon}
-              onPress={closeEditModal}
-            >
+            <TouchableOpacity style={styles.closeicon} onPress={closeEditModal}>
               <Icon name="close" size={24} color="grey" />
             </TouchableOpacity>
             <Text style={styles.modalHeading}>Edit Issue</Text>
@@ -317,9 +339,14 @@ const IssueHistory = () => {
               }
             />
             <TouchableOpacity style={styles.uploadImageButton}>
-              <Text style={styles.uploadImageButtonText}>Update Image (Optional)</Text>
+              <Text style={styles.uploadImageButtonText}>
+                Update Image (Optional)
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmButton} onPress={handleSaveChanges}>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleSaveChanges}
+            >
               <Text style={styles.confirmButtonText}>Confirm</Text>
             </TouchableOpacity>
           </View>
@@ -504,7 +531,6 @@ const styles = StyleSheet.create({
   reraiseIcon: {
     marginHorizontal: 20,
   },
-
 });
 
 export default IssueHistory;

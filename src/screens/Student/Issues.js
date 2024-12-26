@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import ReportIssue from "./IssueReportScreen";
 import IssueHistory from "./HistoryScreen";

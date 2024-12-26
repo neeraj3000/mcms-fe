@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Alert } from "react-native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -7,91 +7,84 @@ import {
   DrawerItemList,
   DrawerItem,
 } from "@react-navigation/drawer";
-import { useSession } from "../src/SessionContext"; // Import session context
+import { useSession } from "../src/SessionContext";
 import CoordinatorHome from "../src/screens/Coordinator/Coordinator";
 import RequestInspections from "../src/screens/Coordinator/RequestInspections";
 import RequestFeedback from "../src/screens/Coordinator/RequestFeedback";
 import ReportTable from "../src/screens/Coordinator/Reports";
 import IssuesCoordinator from "../src/screens/Coordinator/IssuesCoordinator";
+import { useNavigation } from "@react-navigation/native";
 
 const Drawer = createDrawerNavigator();
 
-const CustomDrawerContent = (props) => {
-  const { logout } = useSession(); // Access logout function from session context
-  const { navigation } = props; // Access navigation prop
+const CustomDrawerContent = React.memo((props) => {
+  const { logout } = useSession();
+  const navigation = useNavigation();
 
-  const handleLogout = () => {
+  const handleLogout = React.useCallback(() => {
     Alert.alert(
       "Confirm Logout",
       "Are you sure you want to logout?",
       [
         {
           text: "Cancel",
-          onPress: () => {}, // Do nothing on cancel
+          onPress: () => {},
           style: "cancel",
         },
         {
           text: "Logout",
           onPress: () => {
             logout();
-            navigation.replace("Login"); // Navigate to Login screen
+            navigation.replace("Login");
           },
-          style: "destructive", // Optional: makes the button red
+          style: "destructive",
         },
       ],
-      { cancelable: true } // Dismiss alert by tapping outside
+      { cancelable: true }
     );
-  };
+  }, [logout, navigation]);
 
   return (
     <DrawerContentScrollView {...props}>
       <DrawerItemList {...props} />
       <DrawerItem
-        label="Logout" // Corrected label here
+        label="Logout"
         onPress={handleLogout}
         style={{
           marginTop: "auto",
-          backgroundColor: "#007BFF", // Highlight with blue background
-          borderRadius: 5, // Rounded corners
+          backgroundColor: "#007BFF",
+          borderRadius: 5,
         }}
         labelStyle={{
-          color: "white", // White text color for contrast
-          fontWeight: "bold", // Bold text for emphasis
+          color: "white",
+          fontWeight: "bold",
         }}
-        icon={() => (
-          <Ionicons name="log-out-outline" size={24} color="white" /> // Custom logout icon
-        )}
+        icon={() => <Ionicons name="log-out-outline" size={24} color="white" />}
       />
     </DrawerContentScrollView>
   );
-};
+});
 
-const AppNavigator = () => {
+const CoordinatorPage = () => {
+  const { user } = useSession();
+
+  useEffect(() => {
+    if (!user) {
+      console.log("User is not logged in.");
+    }
+  }, [user]);
+
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} />} // Custom Drawer Content
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        headerTitle: "Mess Coordinator", // Set header title as 'Menu' for each screen
-        drawerStyle: {
-          backgroundColor: "#fff",
-          width: 240,
-        },
-        drawerLabelStyle: {
-          fontWeight: "bold", // Bold labels in the drawer
-        },
-        drawerHeaderStyle: {
-          backgroundColor: "#007BFF", // Set background color for drawer header
-          height: 120, // Set height of the header
-        },
-        drawerHeaderTitleStyle: {
-          color: "white", // Set color of the title text to white
-          fontSize: 22, // Increase font size for the title
-          fontWeight: "bold", // Make title bold
-        },
+        headerTitle: "Mess Coordinator",
+        drawerStyle: { backgroundColor: "#fff", width: 240 },
+        drawerLabelStyle: { fontWeight: "bold" },
       }}
     >
       <Drawer.Screen
-        name="Home"
+        name="Coordinator Home"
         component={CoordinatorHome}
         options={{
           drawerIcon: ({ color, size }) => (
@@ -139,4 +132,4 @@ const AppNavigator = () => {
   );
 };
 
-export default AppNavigator;
+export default CoordinatorPage;

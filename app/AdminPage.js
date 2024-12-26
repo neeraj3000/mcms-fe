@@ -19,7 +19,7 @@ const Drawer = createDrawerNavigator();
 
 const CustomDrawerContent = (props) => {
   const { logout } = useSession();
-  const { navigation } = props;
+  const navigation = props.navigation;
 
   const handleLogout = () => {
     Alert.alert(
@@ -34,8 +34,8 @@ const CustomDrawerContent = (props) => {
         {
           text: "Yes",
           onPress: () => {
-            logout(); // Clear session data
-            navigation.replace("Login"); // Navigate to Login screen
+            logout();
+            navigation.replace("Login");
           },
         },
       ],

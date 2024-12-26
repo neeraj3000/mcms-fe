@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert } from "react-native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
+import { useState, useEffect } from "react";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import {
   DrawerContentScrollView,
@@ -8,6 +9,7 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { useSession } from "../src/SessionContext"; // Import session context
+import { useNavigation } from "@react-navigation/native";
 import AuthorityHome from "../src/screens/Authority/Authority"; // Renamed for Authority
 import RequestInspections from "../src/screens/Coordinator/RequestInspections"; // Adjusted for Authority
 import ReportTable from "../src/screens/Coordinator/Reports"; // Adjusted for Authority
@@ -17,7 +19,7 @@ const Drawer = createDrawerNavigator();
 
 const CustomDrawerContent = (props) => {
   const { logout } = useSession(); // Access logout function from session context
-  const { navigation } = props; // Access navigation prop
+  const navigation = useNavigation(); // Access navigation prop
 
   const handleLogout = () => {
     Alert.alert(
@@ -65,7 +67,16 @@ const CustomDrawerContent = (props) => {
   );
 };
 
-const AuthorityNavigate = () => {
+const AuthorityPage = () => {
+  const { user } = useSession();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    if (!user) {
+      console.log("User is not logged in."); // Navigate to Login screen if no user
+    }
+  }, [user, navigation]);
+
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />} // Custom Drawer Content
@@ -90,7 +101,7 @@ const AuthorityNavigate = () => {
       }}
     >
       <Drawer.Screen
-        name="Home"
+        name="Authority Home"
         component={AuthorityHome} // Adjusted for Authority
         options={{
           drawerIcon: ({ color, size }) => (
@@ -129,4 +140,4 @@ const AuthorityNavigate = () => {
   );
 };
 
-export default AuthorityNavigate;
+export default AuthorityPage;
