@@ -48,9 +48,7 @@ const IssuesComponent = ({ mode = "none" }) => {
           const filteredIssues =
             selectedMess === "all"
               ? issuesData
-              : issuesData.filter(
-                  (issue) => issue.messNo === selectedMess
-                );
+              : issuesData.filter((issue) => issue.messNo === selectedMess);
 
           const newVotes = {};
           for (const issue of filteredIssues) {
@@ -242,7 +240,9 @@ const IssuesComponent = ({ mode = "none" }) => {
             )}
           </View>
         )}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) =>
+          item.id ? item.id.toString() : index.toString()
+        }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={

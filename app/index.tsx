@@ -8,10 +8,7 @@ import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
 import StudentPage from "../app/StudentPage";
 import MRPage from "../app/MRPage";
-import CoordinatorPage from "../app/CoordinatorPage";
 import AdminPage from "../app/AdminPage";
-import Director from "../app/Director";
-import AdministrativeOfficer from "../src/screens/AdministrativeOfficer/AdministrativeOfficer";
 import Supervisor from "./Supervisor";
 import AuthorityNavigate from "./Authority";
 
@@ -86,21 +83,6 @@ const App = () => {
           <Stack.Screen
             name="Admin"
             component={AdminPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Coordinator"
-            component={CoordinatorPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Director"
-            component={Director}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="AO"
-            component={AdministrativeOfficer}
             options={{ headerShown: false }}
           />
           <Stack.Screen
