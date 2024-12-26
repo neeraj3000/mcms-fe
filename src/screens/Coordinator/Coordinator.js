@@ -1,21 +1,21 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import FeedbackScreen from "./ViewFeedBack";
-import Analytics from "./Analytics";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import FeedbackAnalytics from "./FeedbackAnalytics";
+import InspectionAnalytics from "./InspectionAnalytics";
 
-const CoordinatorHome = () => {
-  return <Analytics />;
-};
+const Tab = createMaterialTopTabNavigator();
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  header: { fontSize: 24, fontWeight: "bold", marginBottom: 8 },
-  text: { fontSize: 16, color: "#555" },
-});
-
-export default CoordinatorHome;
+export default function CoordinatorHome() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarLabelStyle: { fontSize: 14, fontWeight: "bold" },
+        tabBarIndicatorStyle: { backgroundColor: "#007bff" },
+        tabBarActiveTintColor: "#007bff",
+      }}
+    >
+      <Tab.Screen name="Feedback Reports" component={FeedbackAnalytics} />
+      <Tab.Screen name="Inspection Reports" component={InspectionAnalytics} />
+    </Tab.Navigator>
+  );
+}

@@ -10,7 +10,8 @@ import StudentPage from "../app/StudentPage";
 import MRPage from "../app/MRPage";
 import AdminPage from "../app/AdminPage";
 import Supervisor from "./Supervisor";
-import AuthorityNavigate from "./Authority";
+import CoordinatorPage from "./CoordinatorPage";
+import AuthorityPage from "./Authority";
 
 const Stack = createStackNavigator();
 
@@ -59,43 +60,49 @@ const App = () => {
 
   return (
     <SessionProvider>
-        <Stack.Navigator initialRouteName="Login">
-          <Stack.Screen
-            name="Login"
-            component={LoginPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="StudentPage"
-            component={StudentPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="MRPage"
-            component={MRPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Register"
-            component={RegisterPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Admin"
-            component={AdminPage}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Supervisor"
-            component={Supervisor}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Authority"
-            component={AuthorityNavigate}
-            options={{ headerShown: false }}
-          />
-        </Stack.Navigator>
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen
+          name="Login"
+          component={LoginPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StudentPage"
+          component={StudentPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MRPage"
+          component={MRPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Register"
+          component={RegisterPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Coordinator"
+          component={CoordinatorPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Authority"
+          component={AuthorityPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Admin"
+          component={AdminPage}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="Supervisor"
+          component={Supervisor}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
     </SessionProvider>
   );
 };

@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useSession } from "../../SessionContext"; // Import context
 import { loginUser } from "../../../backend/authnew";
-import { registerForPushNotificationsAsync } from "../../utils/registerNotifications";
 
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -45,15 +44,7 @@ const LoginPage = ({ navigation }) => {
       });
 
       // Register for push notifications (only once)
-      try {
-        await registerForPushNotificationsAsync(user.userId, user.role)
-          .then((token) => console.log("Push notification token:", token))
-          .catch((err) =>
-            console.error("Error during push notification registration:", err)
-          );
-      } catch (err) {
-        console.error("Error in registering push notifications:", err);
-      }
+      
 
       // Navigate based on user role (only once)
       switch (user.role) {

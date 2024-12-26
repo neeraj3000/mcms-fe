@@ -123,8 +123,8 @@ const IssuesComponent = ({ mode = "none" }) => {
                 ? currentVote.upvotes + (currentVote.upvoted ? -1 : 1)
                 : currentVote.upvotes - (currentVote.upvoted ? 1 : 0),
               downvotes: isDownvote
-                ? currentVote.downvotes + (currentVote.downvoted ? -1 : 1)
-                : currentVote.downvotes - (currentVote.downvoted ? 1 : 0),
+                ? currentVote.downvotes + (currentVote.downvotes ? -1 : 1)
+                : currentVote.downvotes - (currentVote.downvotes ? 1 : 0),
               upvoted: isUpvote ? !currentVote.upvoted : false,
               downvoted: isDownvote ? !currentVote.downvoted : false,
             },
@@ -240,9 +240,7 @@ const IssuesComponent = ({ mode = "none" }) => {
             )}
           </View>
         )}
-        keyExtractor={(item, index) =>
-          item.id ? item.id.toString() : index.toString()
-        }
+        keyExtractor={() => Math.random().toString()} // Use issueId as the unique key
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={

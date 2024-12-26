@@ -32,10 +32,9 @@ const RequestInspection = () => {
   ]);
   const [newOption, setNewOption] = useState("");
   const [confirmationVisible, setConfirmationVisible] = useState(false);
-  const [date, setDate] = useState(""); // State for inspection date
+  const [date, setDate] = useState("");
 
   useEffect(() => {
-    // Automatically set today's date when the component loads
     const today = new Date().toISOString().split("T")[0];
     setDate(today);
   }, []);
@@ -71,18 +70,16 @@ const RequestInspection = () => {
           description
         );
         console.log(result);
-        console.log(selectedOptions)
-        const optionsWithDate = [
-          ...selectedOptions,
-          date,
-        ];
-        console.log("heyy")
-        console.log(optionsWithDate)
+
+        const optionsWithDate = [...selectedOptions, date];
+        console.log(optionsWithDate);
+
         const response = await addMultipleInspectOptions(
           messId.toString(),
-          optionsWithDate,
+          optionsWithDate
         );
         console.log(response);
+
         if (result.success && response.success) {
           alert(result.message);
           setSelectedOptions([]);
@@ -125,7 +122,7 @@ const RequestInspection = () => {
         >
           <Picker.Item label="Select Mess" value="" />
           {messOptions.map((mess, index) => (
-            <Picker.Item key={index} label={mess} value={mess} />
+            <Picker.Item key={index} label={`Mess ${mess}`} value={mess} />
           ))}
         </Picker>
       </View>
@@ -143,7 +140,7 @@ const RequestInspection = () => {
 
       <View style={styles.formItem}>
         <Text style={styles.label}>Inspection Date:</Text>
-        <Text style={styles.dateField}>{date}</Text> {/* Non-editable field */}
+        <Text style={styles.dateField}>{date}</Text>
       </View>
 
       <View style={styles.formItem}>
@@ -176,7 +173,6 @@ const RequestInspection = () => {
         color="#007bff"
       />
 
-      {/* Confirmation Modal */}
       <Modal
         transparent={true}
         visible={confirmationVisible}
@@ -211,17 +207,6 @@ const RequestInspection = () => {
 };
 
 const styles = StyleSheet.create({
-  // Other styles
-  dateField: {
-    fontSize: 16,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
-    backgroundColor: "#e9ecef",
-    color: "#6c757d",
-  },
-
   container: {
     padding: 20,
     backgroundColor: "#f8f8f8",
@@ -259,6 +244,15 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     textAlignVertical: "top",
     backgroundColor: "#fff",
+  },
+  dateField: {
+    fontSize: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "gray",
+    borderRadius: 5,
+    backgroundColor: "#e9ecef",
+    color: "#6c757d",
   },
   checkboxContainer: {
     flexDirection: "row",

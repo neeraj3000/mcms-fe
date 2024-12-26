@@ -9,7 +9,7 @@ import {
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "../src/SessionContext";
-
+import { useNavigation } from "@react-navigation/native";
 import StudentHomePage from "../src/screens/Student/Student";
 import FeedbackForm from "../src/screens/Student/FeedbackScreen";
 import Issues from "../src/screens/Student/Issues";
@@ -22,7 +22,7 @@ const Tab = createBottomTabNavigator();
 
 const CustomDrawerContent = (props) => {
   const { logout } = useSession();
-  const navigation = props.navigation; // Access navigation from props
+  const navigation = useNavigation(); // Access navigation from props
 
   const handleLogout = () => {
     Alert.alert(
@@ -69,36 +69,36 @@ const CustomDrawerContent = (props) => {
 };
 
 // Drawer Wrapper for a Tab
-const DrawerWrapper = (Component) => {
-  return () => (
-    <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={{
-        drawerStyle: {
-          backgroundColor: "#fff",
-          width: 240,
-        },
-        drawerLabelStyle: {
-          fontWeight: "bold",
-        },
-      }}
-    >
-      <Drawer.Screen name="Student Home" component={StudentHomePage} />
-      <Drawer.Screen name="Feedback" component={FeedbackForm} />
-      <Drawer.Screen name="Issues" component={Issues} />
-    </Drawer.Navigator>
-  );
-};
+const DrawerWrapper = () => (
+  <Drawer.Navigator
+    drawerContent={(props) => <CustomDrawerContent {...props} />}
+    screenOptions={{
+      drawerStyle: {
+        backgroundColor: "#fff",
+        width: 240,
+      },
+      drawerLabelStyle: {
+        fontWeight: "bold",
+      },
+    }}
+  >
+    <Drawer.Screen name="Student Home" component={StudentHomePage} />
+    <Drawer.Screen name="Feedback" component={FeedbackForm} />
+    <Drawer.Screen name="Issues" component={Issues} />
+  </Drawer.Navigator>
+);
+
 
 // Bottom Tab Navigator
-const StudentPage = ({ navigation }) => {
+const StudentPage = () => {
   const { user } = useSession();
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (!user) {
-      navigation.replace("Login"); // Navigate to Login screen if no user
+      console.log("hloo User is not logged in."); // Navigate to Login screen if no user
     }
-  }, [user]);
+  }, [user, navigation]);
 
   return (
     <Tab.Navigator
@@ -125,7 +125,7 @@ const StudentPage = ({ navigation }) => {
         headerShown: false, // Remove header for all tabs
       })}
     >
-      <Tab.Screen name="Home" component={DrawerWrapper(StudentHomePage)} />
+      <Tab.Screen name="Home" component={DrawerWrapper} />
       <Tab.Screen
         name="Mess Menu"
         component={MessMenuPage}

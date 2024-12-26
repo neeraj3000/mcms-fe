@@ -16,7 +16,7 @@ import RequestMenuChange from "../src/screens/Supervisor/RequestMenuChnge";
 
 const Drawer = createDrawerNavigator();
 
-const CustomDrawerContent = (props: any) => {
+const CustomDrawerContent = (props) => {
   const { logout } = useSession();
   const navigation = useNavigation();
 
@@ -52,7 +52,7 @@ const Supervisor = () => {
 
   useEffect(() => {
     if (!user) {
-      navigation.replace("Login");
+      console.log("User is not logged in.");
     }
   }, [user, navigation]);
 
