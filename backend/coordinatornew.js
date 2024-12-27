@@ -136,6 +136,7 @@ export async function getAllCoordinators() {
     }
 
     const coordinatorsList = snapshot.docs.map((doc) => doc.data());
+    console.log(coordinatorsList);
     return { success: true, coordinators: coordinatorsList };
   } catch (err) {
     console.error(err);

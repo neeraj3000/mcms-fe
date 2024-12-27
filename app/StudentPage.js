@@ -18,6 +18,7 @@ import ReportIssue from "@/src/screens/Student/IssueReportScreen";
 import ProfilePage from "../src/screens/Student/ProfilePage";
 import MessMenuPage from "../src/screens/Student/MessMenu";
 import GuidelinesPage from "../src/screens/Student/Guidelines";
+import GlobalFAB from "../src/components/GlobalFAB";
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();

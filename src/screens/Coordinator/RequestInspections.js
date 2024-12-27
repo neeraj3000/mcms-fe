@@ -13,6 +13,7 @@ import { Picker } from "@react-native-picker/picker";
 import { Checkbox } from "react-native-paper";
 import { updateInspectionStatusAndDescription } from "../../../backend/inspectionnew";
 import { addMultipleInspectOptions } from "../../../backend/inspectionnew";
+import sendNotifications from "@/src/utils/sendNotifications";
 
 const RequestInspection = () => {
   const [selectedMess, setSelectedMess] = useState("");
@@ -70,17 +71,17 @@ const RequestInspection = () => {
           messId,
           description
         );
+        sendNotifications(
+          result.userIds,
+          "Inspection",
+          `Need Inspection in the mess  ${messId}`
+        );
         console.log(result);
-        console.log(selectedOptions)
-        const optionsWithDate = [
-          ...selectedOptions,
-          date,
-        ];
-        console.log("heyy")
-        console.log(optionsWithDate)
+        console.log(selectedOptions);
+        const optionsWithDate = [...selectedOptions, date];
         const response = await addMultipleInspectOptions(
           messId.toString(),
-          optionsWithDate,
+          optionsWithDate
         );
         console.log(response);
         if (result.success && response.success) {
@@ -143,7 +144,7 @@ const RequestInspection = () => {
 
       <View style={styles.formItem}>
         <Text style={styles.label}>Inspection Date:</Text>
-        <Text style={styles.dateField}>{date}</Text> 
+        <Text style={styles.dateField}>{date}</Text>
       </View>
 
       <View style={styles.formItem}>

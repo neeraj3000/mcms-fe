@@ -14,7 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import * as FileSystem from "expo-file-system";
-
+import axios from "axios";
 // Initialize InspectOptions Collection
 export async function initializeInspectOptions() {
   try {
@@ -167,10 +167,16 @@ async function getNextInspectionId() {
 // Create Inspection Reports
 // Create Inspection Reports
 // Create Inspection Reports
-export async function createInspectionReport(mrId, messNo, image, options, date) {
+export async function createInspectionReport(
+  mrId,
+  messNo,
+  image,
+  options,
+  date
+) {
   try {
     const inspectionId = await getNextInspectionId();
-    console.log(typeof (mrId));
+    console.log(typeof mrId);
     let imageUrl = null;
     if (image) {
       try {
@@ -579,9 +585,9 @@ export async function updateInspectionStatusAndDescription(
         message: "No users found for the given MR emails",
       };
     }
-
     const userIds = usersSnapshot.docs.map((doc) => doc.data().userId);
-
+    const strArray = userIds.map(String);
+    //send notifications to all the representatives on the inspections
     // Retrieve representative documents for the users
     const representativesRef = collection(firestore, "representative");
     const representativesQuery = query(
@@ -620,6 +626,7 @@ export async function updateInspectionStatusAndDescription(
 
     return {
       success: true,
+      userIds:strArray,
       message: "Inspection status and description updated successfully",
     };
   } catch (err) {

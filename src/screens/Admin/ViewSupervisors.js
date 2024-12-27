@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, Modal } from "react-native";
-import { getAllMess } from "../../../backend/messnew"; // Make sure this path is correct
+import {
+  View,
+  Text,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Linking,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { getAllMess } from "../../../backend/messnew";
 import {
   deleteSupervisorById,
   updateSupervisorProfile,
-} from "../../../backend/supervisornew"; // Same here for supervisor functions
-import { getSupervisorsByMessId } from "../../../backend/messnew"; // Same here for supervisor functions
-import { Picker } from "@react-native-picker/picker";
+  getSupervisorsByMessId,
+} from "../../../backend/supervisornew";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const ViewMessSupervisor = () => {
   const [messes, setMesses] = useState([]);
@@ -15,118 +25,120 @@ const ViewMessSupervisor = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
 
-  // Fetch messes from Firestore
   const fetchMesses = async () => {
     const result = await getAllMess();
     if (result.success) {
-      setMesses(result.messList); // Set the fetched mess list
+      setMesses(result.messList);
     } else {
       console.error("Failed to fetch messes:", result.message);
     }
   };
 
-  // Fetch supervisors for the selected mess
   const fetchSupervisors = async (messId) => {
-    const result = await getSupervisorsByMessId(messId);
+    setSupervisors([]); // Clear previous supervisors
+    if (!messId) return;
+    const result = await getSupervisorsByMessId(String(messId));
     if (result.success) {
-      setSupervisors(result.supervisors); // Set the fetched supervisors for the selected mess
+      setSupervisors(result.supervisors);
     } else {
       console.error("Failed to fetch supervisors:", result.message);
     }
   };
 
-  // Show modal to edit supervisor
   const handleEditSupervisor = (supervisor) => {
     setSelectedSupervisor(supervisor);
     setIsModalVisible(true);
   };
 
-  // Close modal
   const closeModal = () => {
     setIsModalVisible(false);
     setSelectedSupervisor(null);
   };
 
-  // Handle delete supervisor
   const handleDeleteSupervisor = async (supervisorId) => {
     const result = await deleteSupervisorById(supervisorId);
     if (result.success) {
-      console.log("Supervisor deleted successfully");
-      fetchSupervisors(selectedMessId); // Refresh supervisors after deletion
+      fetchSupervisors(selectedMessId);
     } else {
       console.error("Failed to delete supervisor:", result.message);
     }
   };
 
-  // Handle update supervisor details
   const handleUpdateSupervisor = async () => {
     const { supervisorId, name, mobileNo } = selectedSupervisor;
     const result = await updateSupervisorProfile(supervisorId, name, mobileNo);
     if (result.success) {
-      console.log("Supervisor updated successfully");
-      fetchSupervisors(selectedMessId); // Refresh supervisors after update
+      fetchSupervisors(selectedMessId);
       closeModal();
     } else {
       console.error("Failed to update supervisor:", result.message);
     }
   };
 
-  // Fetch messes when component mounts
   useEffect(() => {
     fetchMesses();
   }, []);
 
-  // Fetch supervisors when selected mess changes
   useEffect(() => {
-    if (selectedMessId) {
-      fetchSupervisors(selectedMessId);
-    }
+    fetchSupervisors(selectedMessId);
   }, [selectedMessId]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f0f0f0", padding: 20 }}>
-      <Text>Select a Mess:</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>Select a Mess</Text>
       <Picker
         selectedValue={selectedMessId}
         onValueChange={(itemValue) => setSelectedMessId(itemValue)}
+        style={styles.picker}
       >
         <Picker.Item label="Select a Mess" value={null} />
         {messes.map((mess, index) => (
           <Picker.Item
-            key={mess.id || index} // Use mess.id if available, otherwise fallback to index
+            key={mess.id || index}
             label={mess.name}
             value={mess.messId}
           />
         ))}
       </Picker>
 
-      <Button
-        title="Fetch Supervisors"
-        onPress={() => fetchSupervisors(selectedMessId)}
-      />
-
       {supervisors.length > 0 ? (
-        <View>
-          {supervisors.map((supervisor, index) => (
-            <View
-              key={supervisor.supervisorId || index} // Use supervisor.supervisorId if available, otherwise fallback to index
-              style={{ marginBottom: 10 }}
-            >
-              <Text>Name: {supervisor.name}</Text>
-              <Text>Mobile: {supervisor.mobileNo}</Text>
-              <Button
-                title="Edit"
-                onPress={() => handleEditSupervisor(supervisor)}
-              />
-              <Button
-                title="Delete"
-                onPress={() => handleDeleteSupervisor(supervisor.supervisorId)}
-              />
+        <FlatList
+          data={supervisors}
+          keyExtractor={(item) => item.supervisorId.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardContent}>
+                <Text style={styles.supervisorName}>{item.name}</Text>
+                <Text style={styles.supervisorInfo}>
+                  Mobile: {item.mobileNo}
+                </Text>
+              </View>
+              <View style={styles.iconContainer}>
+                <TouchableOpacity onPress={() => handleEditSupervisor(item)}>
+                  <Icon name="edit" size={24} color="#007BFF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDeleteSupervisor(item.supervisorId)}
+                  style={{ marginLeft: 10 }}
+                >
+                  <Icon name="delete" size={24} color="#FF3B30" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(`tel:${item.mobileNo}`)}
+                  style={{ marginLeft: 10 }}
+                >
+                  <Icon name="phone" size={24} color="#34C759" />
+                </TouchableOpacity>
+              </View>
             </View>
-          ))}
-        </View>
+          )}
+        />
       ) : (
-        <Text>No supervisors found</Text>
+        <Text style={styles.noSupervisorsText}>
+          {selectedMessId
+            ? "No supervisors found for this mess."
+            : "Please select a mess to view supervisors."}
+        </Text>
       )}
 
       {isModalVisible && selectedSupervisor && (
@@ -135,32 +147,17 @@ const ViewMessSupervisor = () => {
           visible={isModalVisible}
           onRequestClose={closeModal}
         >
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#fff",
-                padding: 20,
-                borderRadius: 10,
-                width: "80%",
-              }}
-            >
-              <Text>Edit Supervisor</Text>
-              <Text>Name:</Text>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalHeader}>Edit Supervisor</Text>
               <TextInput
                 value={selectedSupervisor.name}
                 onChangeText={(text) =>
                   setSelectedSupervisor({ ...selectedSupervisor, name: text })
                 }
-                style={{ borderBottomWidth: 1, marginBottom: 10 }}
+                style={styles.input}
+                placeholder="Name"
               />
-              <Text>Mobile No:</Text>
               <TextInput
                 value={selectedSupervisor.mobileNo}
                 onChangeText={(text) =>
@@ -169,10 +166,18 @@ const ViewMessSupervisor = () => {
                     mobileNo: text,
                   })
                 }
-                style={{ borderBottomWidth: 1, marginBottom: 10 }}
+                style={styles.input}
+                placeholder="Mobile No"
+                keyboardType="phone-pad"
               />
-              <Button title="Save" onPress={handleUpdateSupervisor} />
-              <Button title="Cancel" onPress={closeModal} />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity onPress={handleUpdateSupervisor}>
+                  <Text style={styles.saveButton}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={closeModal}>
+                  <Text style={styles.cancelButton}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -182,3 +187,94 @@ const ViewMessSupervisor = () => {
 };
 
 export default ViewMessSupervisor;
+
+// Styles updated for modern UI
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+    padding: 20,
+  },
+  header: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  picker: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  card: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  supervisorName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  supervisorInfo: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 5,
+  },
+  iconContainer: {
+    flexDirection: "row",
+  },
+  noSupervisorsText: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    marginTop: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  modalHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  input: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    marginBottom: 20,
+    fontSize: 16,
+    padding: 5,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  saveButton: {
+    color: "#007BFF",
+    fontWeight: "bold",
+  },
+  cancelButton: {
+    color: "#FF3B30",
+    fontWeight: "bold",
+  },
+});

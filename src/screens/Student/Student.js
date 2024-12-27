@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import * as Animatable from "react-native-animatable";
 import { getMessMenu } from "@/backend/messmenunew";
-
+import GlobalFAB from "@/src/components/GlobalFAB";
 const StudentHomePage = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [messTimetable, setMessTimetable] = useState({});
@@ -78,8 +78,6 @@ const StudentHomePage = () => {
         <Text style={styles.headerText}>Today's Menu</Text>
       </View>
 
-      
-
       <View style={styles.quoteContainer}>
         <Text style={styles.quoteText}>
           "A good meal can change the course of your day."
@@ -95,6 +93,7 @@ const StudentHomePage = () => {
           <Text style={styles.noMenuText}>No menu available for today.</Text>
         )}
       </View>
+      <GlobalFAB />
     </ScrollView>
   );
 };

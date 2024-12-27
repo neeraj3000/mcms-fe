@@ -16,53 +16,6 @@ import {
 } from "firebase/firestore";
 // const SALT_ROUNDS = 10;
 
-/*// Register Supervisor(need update)
-export const registerSupervisor = async ({ name, mobileNo, email, password }) => {
-  try {
-    if (!name || !mobileNo || !email || !password) {
-      return { success: false, message: 'All fields are required' };
-    }
-
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-    const usersRef = collection(firestore, 'users');
-    const supervisorsRef = collection(firestore, 'supervisor');
-
-    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
-    const lastUserSnapshot = await getDocs(lastUserQuery);
-    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
-
-    const userDocRef = doc(usersRef, newUserId.toString());
-    const userData = {
-      userId: newUserId,
-      role: 'supervisor',
-      email,
-      password: hashedPassword,
-      createdAt: Timestamp.now(),
-    };
-    await setDoc(userDocRef, userData);
-
-    const lastSupervisorQuery = query(supervisorsRef, orderBy('supervisorId', 'desc'), limit(1));
-    const lastSupervisorSnapshot = await getDocs(lastSupervisorQuery);
-    const newSupervisorId = lastSupervisorSnapshot.empty ? 1 : lastSupervisorSnapshot.docs[0].data().supervisorId + 1;
-
-    const supervisorDocRef = doc(supervisorsRef, newSupervisorId.toString());
-    const supervisorData = {
-      supervisorId: newSupervisorId,
-      name,
-      mobileNo,
-      userId: newUserId,
-      createdAt: Timestamp.now(),
-    };
-    await setDoc(supervisorDocRef, supervisorData);
-
-    return { success: true, message: 'Supervisor registered successfully', supervisorId: newSupervisorId };
-  } catch (err) {
-    console.error(err);
-    return { success: false, error: err.message };
-  }
-};*/
-
 // Register Supervisor
 export const registerSupervisor = async (name, mobileNo, email, password,mess) => {
   try {

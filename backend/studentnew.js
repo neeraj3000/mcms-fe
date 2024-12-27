@@ -1,53 +1,7 @@
-import { collection, query, where, getDocs, addDoc, doc, setDoc, orderBy, limit, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore'; // Required Firestore imports
-import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
-// const bcrypt = require('bcrypt');
+import { collection, query, where, getDocs, addDoc, doc, setDoc, orderBy, limit, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore'; // 
+import { firestore } from './firebase'; 
 
-/*// Register Student and User(need update)
-export const registerStudent = async (name, collegeId, mobileNo, gender, batch, email, password) => {
-  try {
-    if (!name || !collegeId || !mobileNo || !gender || !batch || !email || !password) {
-      throw new Error('All fields are required');
-    }
 
-    const usersRef = collection(firestore, 'users');
-    const studentsRef = collection(firestore, 'Student');
-
-    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
-    const lastUserSnapshot = await getDocs(lastUserQuery);
-    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const userData = {
-      userId: newUserId,
-      role: 'student',
-      email,
-      password: hashedPassword,
-      createdAt: Timestamp.now(),
-    };
-
-    await setDoc(doc(usersRef, newUserId.toString()), userData);
-
-    const studentData = {
-      userId: newUserId,
-      name,
-      collegeId,
-      mobileNo,
-      gender,
-      batch,
-      messId: null,
-      createdAt: Timestamp.now(),
-    };
-
-    await addDoc(studentsRef, studentData);
-
-    return { success: true, message: 'Student registered successfully', userId: newUserId };
-  } catch (err) {
-    console.error(err);
-    throw new Error(err.message);
-  }
-};*/
-// Get Student by userId (Student Collection)
 export const getStudentDetailsByUserId = async (userId) => {
   try {
     if (!userId) {

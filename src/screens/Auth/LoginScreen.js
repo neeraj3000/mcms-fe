@@ -12,7 +12,6 @@ import {
 import { useSession } from "../../SessionContext"; // Import context
 import { loginUser } from "../../../backend/authnew";
 import { registerIndieID, unregisterIndieDevice } from "native-notify";
-import axios from "axios";
 
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -50,11 +49,7 @@ const LoginPage = ({ navigation }) => {
         name: user.name,
         id: user.userId, // Store the userId
       });
-      registerIndieID(
-        `${user.user.userId}`,
-        25679,
-        "XWq6oWFv6eHddwmOo9m6Mv"
-      );
+      registerIndieID(`${user.userId}`, 25679, "XWq6oWFv6eHddwmOo9m6Mv");
       // Register for push notifications (only once)
       // ... (implementation details)
 

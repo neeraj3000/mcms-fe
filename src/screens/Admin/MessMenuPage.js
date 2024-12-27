@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Button, ActivityIndicator } from "react-native-paper";
 import MultiSelect from "react-native-multiple-select";
+import { sendNotification, sendToAll } from "../../utils/sendNotifications";
 import {
   initializeMessMenu,
   getMessMenu,
@@ -143,6 +144,7 @@ const MessMenuPage = () => {
       const { success, message, error } = await updateDayMenu(day, updatedMenu);
       if (success) {
         Alert.alert("Success", message);
+        sendToAll("Menu Update", `Menu is Updated  for ${day}`);
         fetchMessMenu();
       } else {
         setError(error || `Error updating menu for ${day}`);

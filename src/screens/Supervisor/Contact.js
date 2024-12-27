@@ -47,6 +47,7 @@ export default function ContactMessCoordinator() {
   const fetchCoordinators = async () => {
     try {
       const coordinatorsResponse = await getAllCoordinators();
+      console.log(coordinatorsResponse);
       if (coordinatorsResponse.success) {
         setCoordinators(coordinatorsResponse.coordinators || []);
       }
@@ -68,6 +69,7 @@ export default function ContactMessCoordinator() {
   };
 
   const sendEmail = (email) => {
+    console.log(email);
     Linking.openURL(`mailto:${email}`);
   };
 
@@ -96,14 +98,6 @@ export default function ContactMessCoordinator() {
               >
                 <Ionicons name="call" size={30} color="#007BFF" />
                 <Text style={styles.iconText}>Call</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => sendEmail(coordinator.email)}
-                style={styles.contactIconWrapper}
-              >
-                <Ionicons name="mail" size={30} color="#007BFF" />
-                <Text style={styles.iconText}>Mail</Text>
               </TouchableOpacity>
             </View>
           </View>

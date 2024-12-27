@@ -20,6 +20,7 @@ import ViewInspectionReports from "../src/screens/Coordinator/ViewInspectionRepo
 import ViewComplaints from "@/src/screens/Coordinator/ViewComplaints";
 import IssuesList from "../src/screens/Coordinator/AllIssues";
 import MessMenupage from "@/src/screens/Student/MessMenu";
+import ProvideUpdates from "@/src/screens/Coordinator/ProvideUpdates";
 import ProfilePage from "@/src/screens/Student/ProfilePage";
 
 const Drawer = createDrawerNavigator();
@@ -100,6 +101,7 @@ const DrawerWrapper = () => (
     />
     <Drawer.Screen name="Request Feedback" component={RequestFeedback} />
     <Drawer.Screen name="Request Inspection" component={RequestInspections} />
+    <Drawer.Screen name="Updates" component={ProvideUpdates} />
   </Drawer.Navigator>
 );
 

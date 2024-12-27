@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { assignMess, getAllMess } from "../../../backend/messnew"; // Assuming assignMess and getAllMess are imported from an API file
-
+import { sendNotification, sendToAll } from "../../utils/sendNotifications";
+import { getUserIdsByBatchAndGender } from "../../../backend/users";
 const AssignMess = () => {
   const [mess, setMess] = useState("");
   const [batch, setBatch] = useState("");
@@ -22,7 +23,6 @@ const AssignMess = () => {
       setLoading(true);
       try {
         const response = await getAllMess();
-        console.log(response);
         if (response.success) {
           setMessOptions(response.messList);
         } else {
@@ -50,6 +50,10 @@ const AssignMess = () => {
 
       if (response.success) {
         Alert.alert("Success", response.message);
+        res = await getUserIdsByBatchAndGender(batch, gender);
+        console.log(res.userIds);
+        console.log(res.userIds.map(String));
+        sendToAll("Mess Allocated", `New mess ${mess} is allocated for ${batch}`);
         setMess("");
         setBatch("");
         setGender("");
@@ -57,7 +61,10 @@ const AssignMess = () => {
         Alert.alert("Error", response.message);
       }
     } catch (error) {
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      Alert.alert(
+        "Error",
+        "An unexpected error occurred. Please try again." + error
+      );
     } finally {
       setLoading(false);
     }

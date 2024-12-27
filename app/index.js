@@ -8,10 +8,9 @@ import {
   Animated,
 } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { NavigationContainer } from "@react-navigation/native";
 import { SessionProvider } from "../src/SessionContext";
 import registerNNPushToken from "native-notify";
-
+import NotificationInbox from "../src/components/NotificationInbox";
 import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
 import StudentPage from "./StudentPage";
@@ -71,6 +70,11 @@ const App = () => {
           name="Login"
           component={LoginPage}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationInbox}
+          options={{ title: "Notifications" }}
         />
         <Stack.Screen
           name="StudentPage"

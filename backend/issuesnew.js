@@ -1,7 +1,19 @@
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, FieldValue } from "firebase/firestore"; 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  getDoc,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  FieldValue,
+} from "firebase/firestore";
 import { Timestamp } from "firebase/firestore"; // Import Timestamp for timestamps
-import * as FileSystem from 'expo-file-system';
-import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
+import * as FileSystem from "expo-file-system";
+import { firestore } from "./firebase"; // Import Firestore configuration from your firebase.js
+import sendNotifications from "@/src/utils/sendNotifications";
 
 // Upload to Cloudinary
 // Upload to Cloudinary
@@ -19,7 +31,9 @@ export async function uploadToCloudinary(image, type) {
     const uploadPreset = "mcms-issue";
 
     console.log("Reading image as Base64...");
-    const blob = await FileSystem.readAsStringAsync(image, { encoding: "base64" });
+    const blob = await FileSystem.readAsStringAsync(image, {
+      encoding: "base64",
+    });
     console.log("Base64 string created. Length:", blob.length);
 
     console.log("Preparing form data...");
@@ -50,14 +64,20 @@ export async function uploadToCloudinary(image, type) {
   }
 }
 // Create Issue
-export async function createIssue({ description, category, image, userId, messNo }) {
+export async function createIssue({
+  description,
+  category,
+  image,
+  userId,
+  messNo,
+}) {
   try {
-    console.log(description+ " " + category+userId+messNo);
+    console.log(description + " " + category + userId + messNo);
     if (!description || !category || !userId || messNo === undefined) {
-      throw new Error('All fields are required except image');
+      throw new Error("All fields are required except image");
     }
 
-    const issuesRef = collection(firestore, 'Issues');
+    const issuesRef = collection(firestore, "Issues");
     let imageUrl = null;
 
     if (image) {
@@ -69,7 +89,7 @@ export async function createIssue({ description, category, image, userId, messNo
       description,
       category,
       image: imageUrl,
-      status: 'pending',
+      status: "pending",
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       userId,
@@ -82,7 +102,11 @@ export async function createIssue({ description, category, image, userId, messNo
 
     const issueDoc = await addDoc(issuesRef, issueData);
 
-    return { success: true, message: 'Issue created successfully', issueId: issueDoc.id };
+    return {
+      success: true,
+      message: "Issue created successfully",
+      issueId: issueDoc.id,
+    };
   } catch (err) {
     console.error(err);
     throw new Error(err.message);
@@ -94,7 +118,7 @@ export async function getAllIssues() {
   try {
     const snapshot = await getDocs(collection(firestore, "Issues"));
     console.log(snapshot);
-    const issues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     // console.log(issues);
     return { success: true, issues };
   } catch (err) {
@@ -112,7 +136,6 @@ export async function getIssueById(id) {
 
     const docRef = doc(firestore, "Issues", id);
     const issueDoc = await getDoc(docRef);
-
     if (!issueDoc.exists()) {
       throw new Error("Issue not found");
     }
@@ -133,7 +156,17 @@ export async function updateIssue(id, updates) {
 
     updates.updatedAt = Timestamp.now();
     const issueRef = doc(firestore, "Issues", id);
+    const issueDoc = await getIssueById(id);
+    console.log("\nissues", issueDoc);
     await updateDoc(issueRef, updates);
+    const updatesString = Object.entries(updates)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(", ");
+    sendNotifications(
+      [`${issueDoc.issue.userId}`],
+      "Issue Status Updated",
+      `${updatesString} is updated`
+    );
 
     return { success: true, message: "Issue updated successfully" };
   } catch (err) {
@@ -192,7 +225,12 @@ export async function voteIssue(id, voteType) {
       updatedAt: issueData.updatedAt,
     });
 
-    return { success: true, voteType, updatedValue: voteType === "upvote" ? issueData.upvotes : issueData.downvotes };
+    return {
+      success: true,
+      voteType,
+      updatedValue:
+        voteType === "upvote" ? issueData.upvotes : issueData.downvotes,
+    };
   } catch (err) {
     console.error(err);
     throw new Error(err.message);
@@ -203,20 +241,23 @@ export async function voteIssue(id, voteType) {
 export async function getIssuesByUserId(userId) {
   try {
     if (!userId) {
-      return { success: false, message: 'User ID is required' };
+      return { success: false, message: "User ID is required" };
     }
 
-    const q = query(collection(firestore, 'Issues'), where('userId', '==', userId));
+    const q = query(
+      collection(firestore, "Issues"),
+      where("userId", "==", userId)
+    );
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return { success: false, message: 'No issues found for this user' };
+      return { success: false, message: "No issues found for this user" };
     }
 
-    const issues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return { success: true, issues };
   } catch (err) {
-    console.error('Error fetching issues by userId:', err);
+    console.error("Error fetching issues by userId:", err);
     return { success: false, error: err.message };
   }
 }
@@ -225,14 +266,16 @@ export async function getIssuesByUserId(userId) {
 export async function getMessNoByUserId(userId) {
   try {
     if (!userId) {
-      throw new Error('User ID is required.');
+      throw new Error("User ID is required.");
     }
 
-    const representativeRef = collection(firestore, 'representative');
-    const snapshot = await getDocs(query(representativeRef, where('userId', '==', userId)));
+    const representativeRef = collection(firestore, "representative");
+    const snapshot = await getDocs(
+      query(representativeRef, where("userId", "==", userId))
+    );
 
     if (snapshot.empty) {
-      throw new Error('No representative found for the given User ID.');
+      throw new Error("No representative found for the given User ID.");
     }
 
     // Assuming only one representative document per userId
@@ -240,12 +283,12 @@ export async function getMessNoByUserId(userId) {
     const messNo = representativeData.messNo;
 
     if (!messNo) {
-      throw new Error('Mess Number is not available for the given User ID.');
+      throw new Error("Mess Number is not available for the given User ID.");
     }
 
     return { success: true, messNo };
   } catch (err) {
-    console.error('Error getting Mess Number by User ID:', err);
+    console.error("Error getting Mess Number by User ID:", err);
     return { success: false, error: err.message };
   }
 }
@@ -254,20 +297,26 @@ export async function getMessNoByUserId(userId) {
 export async function getIssuesByMessNo(messNo) {
   try {
     if (messNo === undefined) {
-      return { success: false, message: 'Mess number is required' };
+      return { success: false, message: "Mess number is required" };
     }
 
-    const q = query(collection(firestore, 'Issues'), where('messNo', '==', messNo));
+    const q = query(
+      collection(firestore, "Issues"),
+      where("messNo", "==", messNo)
+    );
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return { success: false, message: 'No issues found for this mess number' };
+      return {
+        success: false,
+        message: "No issues found for this mess number",
+      };
     }
 
-    const issues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return { success: true, issues };
   } catch (err) {
-    console.error('Error fetching issues by messNo:', err);
+    console.error("Error fetching issues by messNo:", err);
     return { success: false, error: err.message };
   }
 }
@@ -276,20 +325,26 @@ export async function getIssuesByMessNo(messNo) {
 export async function getIssuesByStatus(status) {
   try {
     if (!status) {
-      return { success: false, message: 'Status is required' };
+      return { success: false, message: "Status is required" };
     }
 
-    const q = query(collection(firestore, 'Issues'), where('status', '==', status));
+    const q = query(
+      collection(firestore, "Issues"),
+      where("status", "==", status)
+    );
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return { success: false, message: `No issues found with status: ${status}` };
+      return {
+        success: false,
+        message: `No issues found with status: ${status}`,
+      };
     }
 
-    const issues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return { success: true, issues };
   } catch (err) {
-    console.error('Error fetching issues by status:', err);
+    console.error("Error fetching issues by status:", err);
     return { success: false, error: err.message };
   }
 }
@@ -298,20 +353,26 @@ export async function getIssuesByStatus(status) {
 export async function getIssuesExceptStatus(excludedStatus) {
   try {
     if (!excludedStatus) {
-      return { success: false, message: 'Status is required' };
+      return { success: false, message: "Status is required" };
     }
 
-    const q = query(collection(firestore, 'Issues'), where('status', '!=', excludedStatus));
+    const q = query(
+      collection(firestore, "Issues"),
+      where("status", "!=", excludedStatus)
+    );
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return { success: false, message: `No issues found except status: ${excludedStatus}` };
+      return {
+        success: false,
+        message: `No issues found except status: ${excludedStatus}`,
+      };
     }
 
-    const issues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return { success: true, issues };
   } catch (err) {
-    console.error('Error fetching issues except status:', err);
+    console.error("Error fetching issues except status:", err);
     return { success: false, error: err.message };
   }
 }

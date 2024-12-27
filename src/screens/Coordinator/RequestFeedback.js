@@ -13,7 +13,7 @@ import { Checkbox } from "react-native-paper";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { updateIsFeedbackInStudents } from "../../../backend/feedbacknew";
 import { addOrReplaceFeedbackOptions } from "../../../backend/feedbacknew";
-
+import { sendNotification, sendToAll } from "../../utils/sendNotifications";
 
 const RequestFeedback = () => {
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -65,6 +65,10 @@ const RequestFeedback = () => {
         console.log(response);
         if (result.success && response.success) {
           alert(result.message);
+          sendToAll(
+            "Submit Feedback",
+            `Submit Mess FeedBack for  ${startDate} to ${endDate}`
+          );
           setSelectedOptions([]);
           setStartDate(null);
           setEndDate(null);
@@ -104,10 +108,7 @@ const RequestFeedback = () => {
     if (dateType === "start") {
       setStartDate(date);
       if (!selectedOptions.includes(`${formattedDate}`)) {
-        setSelectedOptions([
-          ...selectedOptions,
-          `${formattedDate}`,
-        ]);
+        setSelectedOptions([...selectedOptions, `${formattedDate}`]);
       }
     } else if (dateType === "end") {
       setEndDate(date);
