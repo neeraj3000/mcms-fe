@@ -15,6 +15,8 @@ import RefreshButton from "../../components/RefreshButton"; // Import the Refres
 import { getAllIssues } from "../../../backend/issuesnew";
 import { useSession } from "../../SessionContext";
 import { handleVote, getUserVote } from "../../../backend/isvoted";
+import { Ionicons } from "@expo/vector-icons";
+
 
 const IssuesWithVote = () => {
   const { user } = useSession();
@@ -236,9 +238,17 @@ const IssuesWithVote = () => {
           <View style={styles.modalContainer}>
             {selectedIssue && (
               <>
+                <TouchableOpacity onPress={closeModal}>
+                  <Ionicons
+                    name="close"
+                    size={30}
+                    color="grey"
+                    style={styles.closeIcon}
+                  />
+                </TouchableOpacity>
                 <Text style={styles.modalTitle}>Issue Details</Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Category:</Text>{" "}
+                  <Text style={styles.modalLabel}>Issue Title:</Text>{" "}
                   {selectedIssue.category || "N/A"}
                 </Text>
                 <Text style={styles.modalText}>
@@ -252,9 +262,9 @@ const IssuesWithVote = () => {
                 <Text style={styles.modalText}>
                   <Text style={styles.modalLabel}>Created At:</Text>{" "}
                   {selectedIssue.createdAt
-                    ? new Date(
-                        selectedIssue.createdAt.seconds * 1000
-                      ).toLocaleString()
+                    ? new Date(selectedIssue.createdAt.seconds * 1000)
+                        .toLocaleString()
+                        .split(",")[0]
                     : "N/A"}
                 </Text>
 
@@ -266,12 +276,6 @@ const IssuesWithVote = () => {
                 ) : (
                   <Text style={styles.noImageText}>No Image Available</Text>
                 )}
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={closeModal}
-                >
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
               </>
             )}
           </View>
@@ -310,6 +314,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
     color: "#333", // Dark gray for title
+  },
+  closeIcon: {
+    position: "absolute",
+    top: -15,
+    left: 240,
   },
   issueItem: {
     padding: 15,

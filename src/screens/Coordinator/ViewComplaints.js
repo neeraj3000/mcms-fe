@@ -10,9 +10,12 @@ import {
   Modal,
   Image,
   TouchableWithoutFeedback,
+  Linking,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import RefreshButton from "../../components/RefreshButton";
 import { getAllIssues } from "@/backend/issuesnew";
+import { getStudentById } from "../../../backend/studentnew";
 import { updateIssue } from "@/backend/issuesnew";
 
 // Function to assign colors based on issue status
@@ -25,7 +28,7 @@ const getStatusColor = (status) => {
     case "new":
       return "#2196f3"; // Blue
     case "resolved":
-      return "#228B22"; // Purple
+      return "#228B22"; // Green
     default:
       return "#888"; // Default grey
   }
@@ -78,6 +81,7 @@ const ViewComplaints = () => {
   const [hasMore, setHasMore] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const fetchIssues = async () => {
     if (loading || !hasMore) return;
@@ -143,9 +147,26 @@ const ViewComplaints = () => {
     }
   };
 
-  const openIssueModal = (issue) => {
-    setSelectedIssue(issue);
+  const openIssueModal = async (issue) => {
     setModalVisible(true);
+    setModalLoading(true);
+
+    try {
+      const student = await getStudentById(issue.userId);
+      if (student.success) {
+        setSelectedIssue({
+          ...issue,
+          collegeId: student.student.collegeId,
+          mobileNo: student.student.mobileNo,
+        });
+      } else {
+        setSelectedIssue(issue);
+      }
+    } catch (error) {
+      setSelectedIssue(issue);
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const closeModal = () => {
@@ -187,46 +208,80 @@ const ViewComplaints = () => {
       <Modal
         visible={modalVisible}
         onRequestClose={closeModal}
+        transparent
         animationType="slide"
-        transparent={true}
       >
         <TouchableWithoutFeedback onPress={closeModal}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              {selectedIssue && (
+              {modalLoading ? (
+                <ActivityIndicator size="large" color="#007bff" />
+              ) : selectedIssue ? (
                 <>
-                  <Text style={styles.modalTitle}>Issue Details</Text>
-                  {selectedIssue.image && (
-                    <Image
-                      source={{ uri: selectedIssue.image }}
-                      style={styles.modalImage}
-                      resizeMode="contain"
+                  <TouchableOpacity onPress={closeModal}>
+                    <Ionicons
+                      name="close"
+                      size={30}
+                      color="grey"
+                      style={styles.closeIcon}
                     />
-                  )}
-                  <Text style={styles.modalContent}>
-                    <Text style={styles.modalSubTitle}>Title: </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>Issue Details</Text>
+                  <Text style={[styles.modalContent, styles.highlight]}>
+                    <Text style={styles.modalSubTitle}>Issue Title: </Text>
                     {selectedIssue.category}
                   </Text>
-                  <Text style={styles.modalContent}>
+                  <Text style={[styles.modalContent, styles.highlight]}>
                     <Text style={styles.modalSubTitle}>Description: </Text>
                     {selectedIssue.description}
+                  </Text>
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Status: </Text>
+                    {selectedIssue.status}
                   </Text>
                   <Text style={styles.modalContent}>
                     <Text style={styles.modalSubTitle}>Mess No: </Text>
                     {selectedIssue.messNo}
                   </Text>
                   <Text style={styles.modalContent}>
-                    <Text style={styles.modalSubTitle}>Status: </Text>
-                    {selectedIssue.status}
+                    <Text style={styles.modalSubTitle}>Student ID: </Text>
+                    {selectedIssue.collegeId}
                   </Text>
-                  <TouchableOpacity
-                    onPress={closeModal}
-                    style={styles.modalCloseButton}
-                  >
-                    <Text style={styles.modalCloseText}>Close</Text>
-                  </TouchableOpacity>
+                  <View style={styles.mobileContainer}>
+                    <Text style={styles.modalsubTitle}>Mobile No: </Text>
+                    <Text style={styles.clickableText}>
+                      {selectedIssue.mobileNo || "N/A"}
+                    </Text>
+                    {selectedIssue.mobileNo && (
+                      <TouchableOpacity
+                        style={styles.callButton}
+                        onPress={() =>
+                          Linking.openURL(`tel:${selectedIssue.mobileNo}`)
+                        }
+                      >
+                        <Text style={styles.callButtonText}>Call</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Created At: </Text>
+                    {selectedIssue.createdAt
+                      ? new Date(selectedIssue.createdAt.seconds * 1000)
+                          .toLocaleString()
+                          .split(",")[0]
+                      : "N/A"}
+                  </Text>
+
+                  {selectedIssue.image ? (
+                    <Image
+                      source={{ uri: selectedIssue.image }}
+                      style={styles.modalImage}
+                    />
+                  ) : (
+                    <Text style={styles.noImageText}>No Image Available</Text>
+                  )}
                 </>
-              )}
+              ) : null}
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -256,27 +311,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#fff",
     borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
     elevation: 5,
   },
   issueContent: {
     flex: 1,
   },
-  modalImage: {
-    width: "100%",
-    height: 200,
-    marginBottom: 15,
-    borderRadius: 8,
-  },
-
   issueTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
   },
   issueStatus: {
@@ -303,36 +344,73 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
   },
   modalContainer: {
-    width: "80%",
+    width: "90%",
     backgroundColor: "#fff",
-    borderRadius: 8,
     padding: 20,
-    alignItems: "center",
+    borderRadius: 10,
+    elevation: 5,
+  },
+  closeIcon: {
+    alignSelf: "flex-end",
+    marginBottom: 10,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    textAlign: "center",
+    marginBottom: 20,
   },
   modalContent: {
     fontSize: 16,
     marginBottom: 10,
   },
+  modalsubTitle: {
+    fontSize: 16,
+    marginBottom: 3,
+    fontWeight: "bold",
+  },
   modalSubTitle: {
     fontWeight: "bold",
   },
-  modalCloseButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#007bff",
-    borderRadius: 5,
+  mobileContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
   },
-  modalCloseText: {
-    color: "#fff",
+  clickableText: {
     fontSize: 16,
+    color: "blue",
+    textDecorationLine: "underline",
+  },
+  callButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    marginLeft: 10,
+  },
+  callButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  highlight: {
+    fontWeight: "bold",
+    fontSize: 17,
+  },
+  modalImage: {
+    width: "100%",
+    height: 200,
+    resizeMode: "contain",
+    marginTop: 10,
+  },
+  noImageText: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    marginTop: 10,
   },
 });
 

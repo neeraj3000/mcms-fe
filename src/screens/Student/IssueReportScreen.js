@@ -24,7 +24,6 @@ const ReportIssue = () => {
 
   useEffect(() => {
     if (!user) {
-      Alert.alert("Error", "No session found! Please log in again.");
     }
   }, [user]);
 

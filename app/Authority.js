@@ -20,7 +20,7 @@ import ViewInspectionReports from "../src/screens/Coordinator/ViewInspectionRepo
 import ViewComplaints from "@/src/screens/Coordinator/ViewComplaints";
 import IssuesList from "../src/screens/Coordinator/AllIssues";
 import MessMenupage from "@/src/screens/Student/MessMenu";
-import ProfilePage from "@/src/screens/Student/ProfilePage";
+import MessInspectionScreen from "../src/screens/Authority/MessSurvey";
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -87,7 +87,7 @@ const DrawerWrapper = () => (
       },
     }}
   >
-    <Drawer.Screen name="Authority Home" component={ViewComplaints} />
+    <Drawer.Screen name="Authority Home" component={MessInspectionScreen} />
     <Drawer.Screen name="Feedback Analytics" component={FeedbackAnalytics} />
     <Drawer.Screen
       name="Inspection Analytics"
@@ -132,7 +132,11 @@ const AuthorityPage = () => {
               : "information-circle-outline";
           } else if (route.name === "Issues") {
             iconName = focused ? "list" : "list-outline";
+          } else if (route.name === "Complaints") {
+            // Added Complaints screen
+            iconName = focused ? "megaphone" : "megaphone-outline"; // You can change the icon here
           }
+
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -142,7 +146,23 @@ const AuthorityPage = () => {
       })}
     >
       <Tab.Screen name="Home" component={DrawerWrapper} />
-
+      <Tab.Screen
+        name="Complaints"
+        component={ViewComplaints}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerLeft: () => (
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color="black"
+              style={{ marginLeft: 20 }}
+              onPress={() => navigation.goBack()}
+            />
+          ),
+          headerTitleAlign: "center",
+        })}
+      />
       <Tab.Screen
         name="Issues"
         component={IssuesList}
@@ -177,7 +197,6 @@ const AuthorityPage = () => {
           headerTitleAlign: "center",
         })}
       />
-      
     </Tab.Navigator>
   );
 };
