@@ -86,7 +86,6 @@ const Admin = () => {
     <View style={styles.container}>
       <Text style={styles.title}>User Registration</Text>
 
-      {/* Role Dropdown */}
       <Text style={styles.label}>Role</Text>
       <View style={styles.dropdown}>
         <Picker
@@ -104,7 +103,6 @@ const Admin = () => {
         </Picker>
       </View>
 
-      {/* Input Fields for Authority, Coordinator, Supervisor */}
       {role && role !== "Mess Representative" && (
         <>
           <Text style={styles.label}>Name</Text>
@@ -165,7 +163,6 @@ const Admin = () => {
           </View>
         </>
       )}
-      {/* Input Fields for Mess Representative and Supervisor */}
       {(role === "Mess Representative") && (
         <>
           <Text style={styles.label}>Email</Text>
@@ -196,7 +193,6 @@ const Admin = () => {
         </>
       )}
 
-      {/* Register Button */}
       <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
         <Text style={styles.registerButtonText}>Register</Text>
       </TouchableOpacity>

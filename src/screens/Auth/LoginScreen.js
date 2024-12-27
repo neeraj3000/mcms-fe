@@ -138,7 +138,6 @@ const LoginPage = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Activity indicator overlay (conditionally rendered) */}
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007bff" />

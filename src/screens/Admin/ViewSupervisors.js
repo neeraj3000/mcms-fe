@@ -85,7 +85,6 @@ const ViewMessSupervisor = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#f0f0f0", padding: 20 }}>
-      {/* Dropdown for selecting mess */}
       <Text>Select a Mess:</Text>
       <Picker
         selectedValue={selectedMessId}
@@ -101,13 +100,11 @@ const ViewMessSupervisor = () => {
         ))}
       </Picker>
 
-      {/* Button to fetch and show supervisors */}
       <Button
         title="Fetch Supervisors"
         onPress={() => fetchSupervisors(selectedMessId)}
       />
 
-      {/* List of supervisors */}
       {supervisors.length > 0 ? (
         <View>
           {supervisors.map((supervisor, index) => (
@@ -132,7 +129,6 @@ const ViewMessSupervisor = () => {
         <Text>No supervisors found</Text>
       )}
 
-      {/* Modal for editing supervisor */}
       {isModalVisible && selectedSupervisor && (
         <Modal
           transparent={true}

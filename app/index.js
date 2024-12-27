@@ -18,8 +18,8 @@ import StudentPage from "./StudentPage";
 import MRPage from "./MRPage";
 import AdminPage from "./AdminPage";
 import Supervisor from "./Supervisor";
-// import CoordinatorPage from "./CoordinatorPage";
-// import AuthorityPage from "./Authority";
+import CoordinatorPage from "./CoordinatorPage";
+import AuthorityPage from "./Authority";
 
 const Stack = createStackNavigator();
 
@@ -87,7 +87,16 @@ const App = () => {
           component={RegisterPage}
           options={{ headerShown: false }}
         />
-
+        <Stack.Screen
+          name="Authority"
+          component={AuthorityPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Coordinator"
+          component={CoordinatorPage}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Admin"
           component={AdminPage}

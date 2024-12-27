@@ -59,7 +59,6 @@ const AnalyticsView = ({ title, categories, data }) => {
   const renderScene = {
     first: () => (
       <ScrollView>
-        {/* Pie Chart */}
         <Text style={styles.chartTitle}>{selectedCategory} (Pie Chart)</Text>
         <PieChart
           data={pieDataFirstTab}
@@ -72,7 +71,6 @@ const AnalyticsView = ({ title, categories, data }) => {
           absolute
         />
 
-        {/* Bar Chart */}
         <Text style={styles.chartTitle}>{selectedCategory} (Bar Chart)</Text>
         <BarChart
           data={barDataFirstTab}
@@ -85,7 +83,6 @@ const AnalyticsView = ({ title, categories, data }) => {
     ),
     second: () => (
       <ScrollView>
-        {/* Pie Chart */}
         <Text style={styles.chartTitle}>{selectedCategory} (Pie Chart)</Text>
         <PieChart
           data={pieDataSecondTab}
@@ -98,7 +95,6 @@ const AnalyticsView = ({ title, categories, data }) => {
           absolute
         />
 
-        {/* Bar Chart */}
         <Text style={styles.chartTitle}>{selectedCategory} (Bar Chart)</Text>
         <BarChart
           data={barDataSecondTab}
@@ -115,7 +111,6 @@ const AnalyticsView = ({ title, categories, data }) => {
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
-      {/* Category Selector */}
       <View style={styles.filterContainer}>
         <Text style={styles.label}>Select Category: </Text>
         <Menu
@@ -140,7 +135,6 @@ const AnalyticsView = ({ title, categories, data }) => {
         </Menu>
       </View>
 
-      {/* Tabs */}
       <TabView
         navigationState={{ index, routes }}
         renderScene={SceneMap(renderScene)}

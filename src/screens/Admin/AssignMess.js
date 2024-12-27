@@ -67,7 +67,6 @@ const AssignMess = () => {
     <View style={styles.container}>
       <Text style={styles.heading}>Assign Mess</Text>
 
-      {/* Mess Dropdown */}
       <Text style={styles.label}>Select Mess:</Text>
       <View style={styles.pickerContainer}>
         <Picker
@@ -86,7 +85,6 @@ const AssignMess = () => {
         </Picker>
       </View>
 
-      {/* Batch Dropdown */}
       <Text style={styles.label}>Select Batch:</Text>
       <View style={styles.pickerContainer}>
         <Picker
@@ -104,7 +102,6 @@ const AssignMess = () => {
         </Picker>
       </View>
 
-      {/* Gender Dropdown */}
       <Text style={styles.label}>Select Gender:</Text>
       <View style={styles.pickerContainer}>
         <Picker
@@ -118,7 +115,6 @@ const AssignMess = () => {
         </Picker>
       </View>
 
-      {/* Assign Mess Button */}
       <TouchableOpacity
         style={styles.button}
         onPress={handleAssign}

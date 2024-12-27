@@ -250,7 +250,6 @@ const IssuesComponent = ({ mode = "none" }) => {
         }
       />
 
-      {/* Modal and other components remain the same */}
       <Modal
         visible={modalVisible}
         animationType="slide"
