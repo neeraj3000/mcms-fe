@@ -10,6 +10,7 @@ import {
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { SessionProvider } from "../src/SessionContext";
+import registerNNPushToken from "native-notify";
 
 import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
@@ -46,6 +47,7 @@ const SplashScreen = () => {
 };
 
 const App = () => {
+  registerNNPushToken(25679, "XWq6oWFv6eHddwmOo9m6Mv");
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
@@ -85,7 +87,7 @@ const App = () => {
           component={RegisterPage}
           options={{ headerShown: false }}
         />
-        
+
         <Stack.Screen
           name="Admin"
           component={AdminPage}

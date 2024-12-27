@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "mess",
-    "slug": "mcms",
+    "slug": "mess-jtamjyq2zlrbjhxutlzgc",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/Food.png",
@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/images/Food.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.starlord78.mess"
+      "package": "com.starlord78.mess",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -47,9 +48,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "1229ddc8-418d-47b2-9d65-9ce5e2586730"
+        "projectId": "13306d7b-6c93-4f98-8263-a9ddb3f2d99f"
       }
     },
-    "owner": "neeraj3000"
+    "owner": "starlord78"
   }
 }
