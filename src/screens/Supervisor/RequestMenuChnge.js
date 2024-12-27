@@ -1,15 +1,45 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { createMenuChangeRequest } from "../../../backend/messMenuChangeRequests"; // Adjust the import path as needed
 
 export default function RequestMenuChange() {
   const [date, setDate] = useState("");
   const [currentMenu, setCurrentMenu] = useState("");
   const [proposedMenu, setProposedMenu] = useState("");
   const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submitRequest = () => {
-    // Handle form submission logic
-    alert("Menu Change Request Submitted");
+  const submitRequest = async () => {
+    setLoading(true);
+    try {
+      if (!date || !currentMenu || !proposedMenu || !reason) {
+        Alert.alert("Error", "All fields are required");
+        setLoading(false);
+        return;
+      }
+
+      const result = await createMenuChangeRequest(
+        date,
+        currentMenu,
+        proposedMenu,
+        reason
+      );
+
+      if (result.success) {
+        Alert.alert("Success", result.message);
+        // Reset the form fields after successful submission
+        setDate("");
+        setCurrentMenu("");
+        setProposedMenu("");
+        setReason("");
+      } else {
+        Alert.alert("Error", result.error);
+      }
+    } catch (err) {
+      Alert.alert("Error", "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,7 +69,11 @@ export default function RequestMenuChange() {
         value={reason}
         onChangeText={setReason}
       />
-      <Button title="Submit Request" onPress={submitRequest} />
+      <Button
+        title={loading ? "Submitting..." : "Submit Request"}
+        onPress={submitRequest}
+        disabled={loading}
+      />
     </View>
   );
 }

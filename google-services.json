@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "78655388339",
+    "project_id": "mess-d25d3",
+    "storage_bucket": "mess-d25d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:78655388339:android:ad9822114f3eb8879f8ec6",
+        "android_client_info": {
+          "package_name": "com.starlord78.mess"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwpBq0h4Kh4UniKQGOJrLvHzFwWMheJIs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
