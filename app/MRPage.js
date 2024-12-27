@@ -15,9 +15,14 @@ import Issues from "../src/screens/Student/Issues";
 import RepresentativePage from "../src/screens/Representative/RepresentativePage";
 import QualityInspection from "../src/screens/Representative/QualityInspection";
 import AllComplaints from "../src/screens/Representative/ViewComplaints";
-import ProfilePage from "../src/screens/Student/ProfilePage";
 import MessMenuPage from "../src/screens/Student/MessMenu";
 import GuidelinesPage from "../src/screens/Student/Guidelines";
+import ReportIssue from "@/src/screens/Student/IssueReportScreen";
+import ProfilePage from "../src/screens/Student/ProfilePage";
+import IssueHistory from "@/src/screens/Student/HistoryScreen";
+import IssuesWithVote from "@/src/screens/Student/AllIssuesScreen";
+
+
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -89,7 +94,8 @@ const DrawerWrapper = () => (
       component={QualityInspection}
     />
     <Drawer.Screen name="View Complaints" component={AllComplaints} />
-    <Drawer.Screen name="Issues" component={Issues} />
+    <Drawer.Screen name="Report Issue" component={ReportIssue} />
+    <Drawer.Screen name="History" component={IssueHistory} />
   </Drawer.Navigator>
 );
 
@@ -110,21 +116,18 @@ const MRPage = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          switch (route.name) {
-            case "Home":
-              iconName = focused ? "home" : "home-outline";
-              break;
-            case "Mess Menu":
-              iconName = focused ? "restaurant" : "restaurant-outline";
-              break;
-            case "Profile":
-              iconName = focused ? "person" : "person-outline";
-              break;
-            case "Guidelines":
-              iconName = focused
-                ? "information-circle"
-                : "information-circle-outline";
-              break;
+          if (route.name === "Home") {
+            iconName = focused ? "home" : "home-outline";
+          } else if (route.name === "Mess Menu") {
+            iconName = focused ? "restaurant" : "restaurant-outline";
+          } else if (route.name === "Profile") {
+            iconName = focused ? "person" : "person-outline";
+          } else if (route.name === "Guidelines") {
+            iconName = focused
+              ? "information-circle"
+              : "information-circle-outline";
+          } else if (route.name === "Issues") {
+            iconName = focused ? "list" : "list-outline";
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -138,24 +141,41 @@ const MRPage = () => {
       <Tab.Screen
         name="Mess Menu"
         component={MessMenuPage}
-        options={{
+        options={({ navigation }) => ({
           headerShown: true,
           headerLeft: () => (
             <Ionicons
-              name="arrow-back"
+              name="arrow-back" // Contextual icon for guidelines
               size={24}
               color="black"
-              style={{ marginLeft: 20 }}
-              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 20 }} // Apply margin directly here
+              onPress={() => navigation.goBack()} // Ensure navigation is passed correctly
             />
           ),
-          headerTitleAlign: "center",
-        }}
+          headerTitleAlign: "center", // Optional: Center the title if needed
+        })}
+      />
+      <Tab.Screen
+        name="Issues"
+        component={IssuesWithVote}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerLeft: () => (
+            <Ionicons
+              name="arrow-back" // Contextual icon for guidelines
+              size={24}
+              color="black"
+              style={{ marginLeft: 20 }} // Apply margin directly here
+              onPress={() => navigation.goBack()} // Ensure navigation is passed correctly
+            />
+          ),
+          headerTitleAlign: "center", // Optional: Center the title if needed
+        })}
       />
       <Tab.Screen
         name="Guidelines"
         component={GuidelinesPage}
-        options={{
+        options={({ navigation }) => ({
           headerShown: true,
           headerLeft: () => (
             <Ionicons
@@ -167,12 +187,12 @@ const MRPage = () => {
             />
           ),
           headerTitleAlign: "center",
-        }}
+        })}
       />
       <Tab.Screen
         name="Profile"
         component={ProfilePage}
-        options={{
+        options={({ navigation }) => ({
           headerShown: true,
           headerLeft: () => (
             <Ionicons
@@ -184,7 +204,7 @@ const MRPage = () => {
             />
           ),
           headerTitleAlign: "center",
-        }}
+        })}
       />
     </Tab.Navigator>
   );

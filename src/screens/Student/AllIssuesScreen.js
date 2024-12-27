@@ -3,182 +3,280 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
   FlatList,
+  ActivityIndicator,
+  Alert,
   Modal,
-  TouchableWithoutFeedback,
-  Keyboard,
+  Image,
+  TouchableOpacity,
 } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
-import axios from "axios";
+import { Picker } from "@react-native-picker/picker";
+import RefreshButton from "../../components/RefreshButton"; // Import the RefreshButton component
+import { getAllIssues } from "../../../backend/issuesnew";
+import { useSession } from "../../SessionContext";
+import { handleVote, getUserVote } from "../../../backend/isvoted";
 
-const IssueItem = React.memo(({ id, title, status, onResolve, onPress }) => {
-  return (
-    <View style={styles.issueItem}>
-      <TouchableOpacity onPress={onPress} style={styles.issueContent}>
-        <Text style={styles.issueTitle}>{title}</Text>
-        <Text style={styles.issueStatus}>{status}</Text>
-      </TouchableOpacity>
-      <View style={styles.resolveContainer}>
-        <TouchableOpacity onPress={onResolve}>
-          <Icon name="checkmark-circle-outline" size={24} color="#28a745" />
-        </TouchableOpacity>
-        <Text style={styles.resolveText}>Resolve</Text>
-      </View>
-    </View>
-  );
-});
-
-const AllIssues = () => {
+const IssuesWithVote = () => {
+  const { user } = useSession();
   const [issues, setIssues] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedIssue, setSelectedIssue] = useState(null); // State for selected issue
-  const [modalVisible, setModalVisible] = useState(false); // State to control modal visibility
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [votes, setVotes] = useState({});
+  const [selectedMess, setSelectedMess] = useState("all");
 
-  // Fetch issues with pagination
-  useEffect(() => {
-    const fetchIssues = async () => {
-      if (loading || !hasMore) return;
+  const colors = {
+    primary: "#007bff", // Blue
+    secondary: "#28a745", // Green
+    danger: "#dc3545", // Red
+    lightGray: "#f2f2f2", // Light Gray
+    white: "#fff",
+  };
 
-      setLoading(true);
-      try {
-        const response = await axios.get(
-          `https://mcms-nseo.onrender.com/complaints/issues`
-        );
-
-        const issuesData = response.data.issues;
+  const fetchIssues = async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    try {
+      const response = await getAllIssues();
+      if (response.success) {
+        const issuesData = response.issues;
 
         if (Array.isArray(issuesData)) {
-          const newIssues = issuesData.filter(
-            (newIssue) =>
-              !issues.some(
-                (existingIssue) => existingIssue.issueId === newIssue.issueId
-              )
-          );
+          const filteredIssues =
+            selectedMess === "all"
+              ? issuesData
+              : issuesData.filter((issue) => issue.messNo === selectedMess);
 
-          setIssues((prevIssues) => [...prevIssues, ...newIssues]);
-          setHasMore(newIssues.length > 0);
+          const newVotes = {};
+          for (const issue of filteredIssues) {
+            const userVote = await getUserVote(issue.id, user.id);
+            newVotes[issue.id] = {
+              upvotes: issue.upvotes || 0,
+              downvotes: issue.downvotes || 0,
+              upvoted: userVote === "upvotes",
+              downvoted: userVote === "downvotes",
+            };
+          }
+
+          filteredIssues.sort((a, b) => {
+            const votesA =
+              (votes[a.id]?.upvotes || a.upvotes || 0) +
+              (votes[a.id]?.downvotes || a.downvotes || 0);
+            const votesB =
+              (votes[b.id]?.upvotes || b.upvotes || 0) +
+              (votes[b.id]?.downvotes || b.downvotes || 0);
+            return votesB - votesA; // Descending order
+          });
+
+          setIssues(filteredIssues);
+          setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
+          setHasMore(filteredIssues.length > 0);
         } else {
-          console.error("Unexpected response format:", response.data);
+          setHasMore(false);
         }
-      } catch (error) {
-        console.error("Error fetching issues:", error);
-        Alert.alert("Error", "Failed to fetch issues from the server.");
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchIssues();
-  }, [page]);
-
-  const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  };
-
-  const handleResolve = async (id, index) => {
-    const updatedIssues = [...issues];
-    updatedIssues[index].status = "Resolved"; // Change the issue status to 'Resolved'
-    setIssues(updatedIssues);
-
-    // Optionally, make an API call to update the server with the new status
-    try {
-      await axios.put(
-        `https://mcms-nseo.onrender.com/complaints/issues/${id}`,
-        {
-          status: "Resolved",
-        }
-      );
     } catch (error) {
-      console.error("Error updating issue status:", error);
-      Alert.alert("Error", "Failed to update the issue status.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const openIssueModal = (issue) => {
-    setSelectedIssue(issue); // Set selected issue
-    setModalVisible(true); // Show modal
+  useEffect(() => {
+    fetchIssues();
+  }, [selectedMess]);
+
+  const handleVotes = async (id, voteType) => {
+    try {
+      const response = await handleVote(id, user.id, voteType);
+      if (response?.success) {
+        Alert.alert("Success", response.message);
+
+        setVotes((prevVotes) => {
+          const currentVote = prevVotes[id] || {
+            upvotes: 0,
+            downvotes: 0,
+            upvoted: false,
+            downvoted: false,
+          };
+          const isUpvote = voteType === "upvotes";
+          const isDownvote = voteType === "downvotes";
+
+          return {
+            ...prevVotes,
+            [id]: {
+              upvotes: isUpvote
+                ? currentVote.upvotes + (currentVote.upvoted ? -1 : 1)
+                : currentVote.upvotes - (currentVote.upvoted ? 1 : 0),
+              downvotes: isDownvote
+                ? currentVote.downvotes + (currentVote.downvotes ? -1 : 1)
+                : currentVote.downvotes - (currentVote.downvotes ? 1 : 0),
+              upvoted: isUpvote ? !currentVote.upvoted : false,
+              downvoted: isDownvote ? !currentVote.downvoted : false,
+            },
+          };
+        });
+      } else {
+        Alert.alert(
+          "Error",
+          response?.message || "Failed to process the vote."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to process the vote.");
+    }
+  };
+
+  const openModal = (issue) => {
+    setSelectedIssue(issue);
+    setModalVisible(true);
   };
 
   const closeModal = () => {
-    setModalVisible(false); // Close modal
-    setSelectedIssue(null); // Clear selected issue
+    setSelectedIssue(null);
+    setModalVisible(false);
+  };
+
+  const refreshIssues = () => {
+    setPage(1);
+    setHasMore(true);
+    setIssues([]);
+    fetchIssues();
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>All Issues</Text>
 
-      {/* FlatList for issues */}
+      <Picker
+        selectedValue={selectedMess}
+        style={styles.picker}
+        onValueChange={(itemValue) => setSelectedMess(itemValue)}
+      >
+        <Picker.Item label="All Messes" value="all" />
+        {[...Array(8).keys()].map((i) => (
+          <Picker.Item
+            key={i + 1}
+            label={`Mess ${i + 1}`}
+            value={(i + 1).toString()}
+          />
+        ))}
+      </Picker>
+
+      <RefreshButton onRefresh={refreshIssues} />
+
       <FlatList
         data={issues}
-        renderItem={({ item, index }) => (
-          <IssueItem
-            key={item.issueId.toString()} // Ensure each item has a unique key
-            id={item.issueId}
-            title={item.description}
-            status={item.status}
-            onResolve={() => handleResolve(item.issueId, index)} // Handle resolve button press
-            onPress={() => openIssueModal(item)} // Open modal on press
-          />
-        )}
-        keyExtractor={(item) => item.issueId.toString()} // Ensure each item has a unique key
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={
-          loading ? <ActivityIndicator size="large" color="#007bff" /> : null
-        }
-      />
+        renderItem={({ item }) => (
+          <View style={styles.issueItem}>
+            <TouchableOpacity onPress={() => openModal(item)}>
+              <Text style={styles.issueTitle}>{item.description}</Text>
+              <Text style={styles.issueStatus}>{item.status}</Text>
+            </TouchableOpacity>
 
-      {/* Modal for Issue Details */}
-      <Modal
-        visible={modalVisible}
-        onRequestClose={closeModal}
-        animationType="slide"
-        transparent={true}
-      >
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              {selectedIssue && (
-                <>
-                  <Text style={styles.modalTitle}>Issue Details</Text>
-                  <Text style={styles.modalContent}>
-                    <Text style={styles.modalSubTitle}>Description: </Text>
-                    {selectedIssue.description}
-                  </Text>
-                  <Text style={styles.modalContent}>
-                    <Text style={styles.modalSubTitle}>Status: </Text>
-                    {selectedIssue.status}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={closeModal}
-                    style={styles.modalCloseButton}
-                  >
-                    <Text style={styles.modalCloseText}>Close</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+            <View style={styles.voteContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.voteButton,
+                  votes[item.id]?.upvoted
+                    ? { backgroundColor: colors.secondary }
+                    : { backgroundColor: colors.lightGray },
+                ]}
+                onPress={() => handleVotes(item.id, "upvotes")}
+              >
+                <Text
+                  style={[
+                    styles.voteText,
+                    votes[item.id]?.upvoted && { color: colors.white },
+                  ]}
+                >
+                  🚀 {votes[item.id]?.upvotes || 0}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.voteButton,
+                  votes[item.id]?.downvoted
+                    ? { backgroundColor: colors.danger }
+                    : { backgroundColor: colors.lightGray },
+                ]}
+                onPress={() => handleVotes(item.id, "downvotes")}
+              >
+                <Text
+                  style={[
+                    styles.voteText,
+                    votes[item.id]?.downvoted && { color: colors.white },
+                  ]}
+                >
+                  💥 {votes[item.id]?.downvotes || 0}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        )}
+        keyExtractor={(item) => item.id.toString()}
+        ListFooterComponent={
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#007bff" />
+              <Text style={styles.loadingText}> Loading...</Text>
+            </View>
+          ) : null
+        }
+      />
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {selectedIssue && (
+              <>
+                <Text style={styles.modalTitle}>Issue Details</Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Category:</Text>{" "}
+                  {selectedIssue.category || "N/A"}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Description:</Text>{" "}
+                  {selectedIssue.description}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Mess No:</Text>{" "}
+                  {selectedIssue.messNo}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Created At:</Text>{" "}
+                  {selectedIssue.createdAt
+                    ? new Date(
+                        selectedIssue.createdAt.seconds * 1000
+                      ).toLocaleString()
+                    : "N/A"}
+                </Text>
 
-      {/* Load More Button */}
-      {hasMore && !loading && (
-        <TouchableOpacity
-          onPress={handleLoadMore}
-          style={styles.loadMoreButton}
-        >
-          <Text style={styles.loadMoreText}>Load More</Text>
-        </TouchableOpacity>
-      )}
+                {selectedIssue.image ? (
+                  <Image
+                    source={{ uri: selectedIssue.image }}
+                    style={styles.modalImage}
+                  />
+                ) : (
+                  <Text style={styles.noImageText}>No Image Available</Text>
+                )}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeModal}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -189,69 +287,65 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2f2f2",
     padding: 20,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  headerText: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
+  },
+  picker: {
+    height: 50,
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+    padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
+    color: "#333", // Dark gray for title
   },
   issueItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     padding: 15,
     marginBottom: 10,
     backgroundColor: "#fff",
     borderRadius: 8,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
-  issueContent: {
-    flex: 1,
-  },
   issueTitle: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#333",
   },
   issueStatus: {
     fontSize: 14,
     color: "#888",
   },
-  resolveContainer: {
+  voteContainer: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  voteButton: {
+    padding: 10,
+    borderRadius: 5,
+    width: 100,
     alignItems: "center",
   },
-  resolveText: {
-    marginLeft: 5,
+  voteText: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#28a745",
-  },
-  loadMoreButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#007bff",
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  loadMoreText: {
-    color: "#fff",
-    fontSize: 16,
+    color: "#007bff",
   },
   modalOverlay: {
     flex: 1,
@@ -260,34 +354,63 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContainer: {
-    width: "80%",
     backgroundColor: "#fff",
-    borderRadius: 8,
     padding: 20,
-    alignItems: "center",
+    borderRadius: 8,
+    width: 300,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center",
   },
-  modalContent: {
+  modalText: {
     fontSize: 16,
     marginBottom: 10,
   },
-  modalSubTitle: {
+  modalLabel: {
     fontWeight: "bold",
   },
-  modalCloseButton: {
+  modalImage: {
+    width: "100%",
+    height: 200,
+    resizeMode: "cover",
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  closeButton: {
     marginTop: 20,
     padding: 10,
     backgroundColor: "#007bff",
     borderRadius: 5,
   },
-  modalCloseText: {
+  closeButtonText: {
     color: "#fff",
+    textAlign: "center",
+  },
+  voteContainerNone: {
+    marginTop: 10,
+    alignItems: "flex-end",
+  },
+  voteTextRight: {
+    fontSize: 14,
+    color: "#007bff",
+  },
+  noImageText: {
+    color: "#888",
+    fontStyle: "italic",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
     fontSize: 16,
+    color: "#cccccc",
   },
 });
 
-export default AllIssues;
+export default IssuesWithVote;

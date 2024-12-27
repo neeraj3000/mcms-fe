@@ -12,7 +12,6 @@ import {
   TextInput,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import axios from "axios";
 import { useSession } from "../../SessionContext";
 import RefreshButton from "../../components/RefreshButton";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -287,7 +286,10 @@ const IssueHistory = () => {
     <View style={styles.container}>
       <Text style={styles.heading}>Issue History</Text>
       {loading ? (
-        <ActivityIndicator size="large" color="#007BFF" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#007bff" />
+          <Text style={styles.loadingText}> Loading...</Text>
+        </View>
       ) : issueHistory.length > 0 ? (
         <ScrollView contentContainerStyle={styles.issueList}>
           {issueHistory.map((item) => renderIssueItem(item))}
@@ -530,6 +532,16 @@ const styles = StyleSheet.create({
   },
   reraiseIcon: {
     marginHorizontal: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#cccccc",
   },
 });
 

@@ -1,17 +1,24 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, Image, StyleSheet, ActivityIndicator,Animated } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  Animated,
+} from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { SessionProvider } from "../src/SessionContext";
 
 import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
-import StudentPage from "../app/StudentPage";
-import MRPage from "../app/MRPage";
-import AdminPage from "../app/AdminPage";
+import StudentPage from "./StudentPage";
+import MRPage from "./MRPage";
+import AdminPage from "./AdminPage";
 import Supervisor from "./Supervisor";
-import CoordinatorPage from "./CoordinatorPage";
-import AuthorityPage from "./Authority";
+// import CoordinatorPage from "./CoordinatorPage";
+// import AuthorityPage from "./Authority";
 
 const Stack = createStackNavigator();
 
@@ -37,9 +44,6 @@ const SplashScreen = () => {
     </View>
   );
 };
-
-
-
 
 const App = () => {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -81,22 +85,12 @@ const App = () => {
           component={RegisterPage}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="Coordinator"
-          component={CoordinatorPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Authority"
-          component={AuthorityPage}
-          options={{ headerShown: false }}
-        />
+        
         <Stack.Screen
           name="Admin"
           component={AdminPage}
           options={{ headerShown: false }}
         />
-
         <Stack.Screen
           name="Supervisor"
           component={Supervisor}
@@ -118,7 +112,6 @@ const styles = StyleSheet.create({
     height: "100%",
     resizeMode: "cover", // Ensures the image fills the entire screen
   },
-
   appName: {
     fontSize: 24,
     fontWeight: "bold",

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useSession } from "../../SessionContext"; // Import context
 import { loginUser } from "../../../backend/authnew";
@@ -15,13 +16,17 @@ const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useSession(); // Access the login function from context
+  const [isLoading, setIsLoading] = useState(false); // State for activity indicator
 
   // Handle user login
   const handleLogin = async () => {
+    setIsLoading(true); // Show activity indicator before login request
+
     try {
       // Validate email and password
       if (!email || !password) {
         Alert.alert("Error", "Please fill in both email and password.");
+        setIsLoading(false); // Hide activity indicator on error
         return;
       }
 
@@ -30,6 +35,7 @@ const LoginPage = ({ navigation }) => {
 
       if (!response.success) {
         Alert.alert("Error", "Invalid email or password.");
+        setIsLoading(false); // Hide activity indicator on error
         return;
       }
 
@@ -44,7 +50,7 @@ const LoginPage = ({ navigation }) => {
       });
 
       // Register for push notifications (only once)
-      
+      // ... (implementation details)
 
       // Navigate based on user role (only once)
       switch (user.role) {
@@ -72,6 +78,8 @@ const LoginPage = ({ navigation }) => {
     } catch (error) {
       console.error("Login failed:", error);
       Alert.alert("Error", "An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false); // Hide activity indicator after login attempt
     }
   };
 
@@ -123,11 +131,20 @@ const LoginPage = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Activity indicator overlay (conditionally rendered) */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={styles.loadingText}>Wait a moment...</Text>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // ... your existing styles
   container: {
     flex: 1,
     backgroundColor: "#E3F2FD", // Light blue background
@@ -209,6 +226,20 @@ const styles = StyleSheet.create({
     color: "#007BFF", // Primary blue color
     fontSize: 14,
     textDecorationLine: "underline",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)", // Darker blue background
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#fff",
+    marginTop: 10,
   },
 });
 

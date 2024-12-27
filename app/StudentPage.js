@@ -12,7 +12,10 @@ import { useSession } from "../src/SessionContext";
 import { useNavigation } from "@react-navigation/native";
 import StudentHomePage from "../src/screens/Student/Student";
 import FeedbackForm from "../src/screens/Student/FeedbackScreen";
+import IssueHistory from "@/src/screens/Student/HistoryScreen";
 import Issues from "../src/screens/Student/Issues";
+import IssuesWithVote from "@/src/screens/Student/AllIssuesScreen";
+import ReportIssue from "@/src/screens/Student/IssueReportScreen";
 import ProfilePage from "../src/screens/Student/ProfilePage";
 import MessMenuPage from "../src/screens/Student/MessMenu";
 import GuidelinesPage from "../src/screens/Student/Guidelines";
@@ -84,10 +87,10 @@ const DrawerWrapper = () => (
   >
     <Drawer.Screen name="Student Home" component={StudentHomePage} />
     <Drawer.Screen name="Feedback" component={FeedbackForm} />
-    <Drawer.Screen name="Issues" component={Issues} />
+    <Drawer.Screen name="Report Issue" component={ReportIssue} />
+    <Drawer.Screen name="History" component={IssueHistory} />
   </Drawer.Navigator>
 );
-
 
 // Bottom Tab Navigator
 const StudentPage = () => {
@@ -115,8 +118,10 @@ const StudentPage = () => {
           } else if (route.name === "Guidelines") {
             iconName = focused
               ? "information-circle"
-              : "information-circle-outline"; // Guidelines icon
-          }
+              : "information-circle-outline";
+          } else if (route.name === "Issues") {
+            iconName = focused ? "list" : "list-outline";
+          } 
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -138,6 +143,23 @@ const StudentPage = () => {
               color="black"
               style={{ marginLeft: 20 }} // Apply margin directly here
               onPress={() => navigation.goBack()}
+            />
+          ),
+          headerTitleAlign: "center", // Optional: Center the title if needed
+        })}
+      />
+      <Tab.Screen
+        name="Issues"
+        component={IssuesWithVote}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerLeft: () => (
+            <Ionicons
+              name="arrow-back" // Contextual icon for guidelines
+              size={24}
+              color="black"
+              style={{ marginLeft: 20 }} // Apply margin directly here
+              onPress={() => navigation.goBack()} // Ensure navigation is passed correctly
             />
           ),
           headerTitleAlign: "center", // Optional: Center the title if needed

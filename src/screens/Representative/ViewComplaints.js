@@ -232,7 +232,12 @@ const AllComplaints = () => {
         onEndReached={() => setPage((prev) => prev + 1)}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
-          loading && <ActivityIndicator size="large" color="#007bff" />
+          loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#007bff" />
+              <Text style={styles.loadingText}> Loading...</Text>
+            </View>
+          )
         }
       />
       <Modal
@@ -414,6 +419,16 @@ const styles = StyleSheet.create({
     color: "#007bff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#cccccc",
   },
 });
 

@@ -49,6 +49,7 @@ const ProfilePage = () => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007bff" />
+        <Text>Wait a moment...</Text>
       </View>
     );
   }
@@ -68,12 +69,7 @@ const ProfilePage = () => {
       <Text style={styles.title}>Your Profile</Text>
       {studentProfile ? (
         <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => navigation.navigate("EditProfile")}
-          >
-            <Icon name="edit" size={24} color="#007bff" />
-          </TouchableOpacity>
+          
 
           <Image
             source={require("../../../assets/images/profile.jpg")}

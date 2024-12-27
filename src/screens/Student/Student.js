@@ -181,7 +181,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
-  // Same styles as provided
 });
 
 export default StudentHomePage;
