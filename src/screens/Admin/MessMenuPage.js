@@ -222,7 +222,6 @@ const MessMenuPage = () => {
             </Button>
           </View>
 
-          {/* Display added items with remove option */}
           <View style={styles.addedItemsContainer}>
             {foodDetails[day]?.[mealType]?.map((item, index) => (
               <View key={index} style={styles.addedItemRow}>

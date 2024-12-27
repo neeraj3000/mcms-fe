@@ -298,7 +298,6 @@ const IssueHistory = () => {
         <Text style={styles.noIssuesText}>No issues reported yet.</Text>
       )}
 
-      {/* First Modal */}
       <Modal
         visible={isModalVisible}
         animationType="slide"
@@ -310,7 +309,6 @@ const IssueHistory = () => {
         </View>
       </Modal>
 
-      {/* Second Modal (Edit Issue) */}
       <Modal
         visible={isEditModalVisible}
         animationType="slide"

@@ -10,9 +10,11 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Keyboard,
+  Linking,
   Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import Ionicons from "react-native-vector-icons/Ionicons"; 
 import RefreshButton from "../../components/RefreshButton";
 import {
   getMessNoByUserId,
@@ -185,9 +187,11 @@ const AllComplaints = () => {
         // If successful, add the collegeId to the issue object
         console.log(student)
         console.log(student.studentData)
+        
         setSelectedIssue({
           ...issue,
           collegeId: student.student.collegeId,
+          mobileNo: student.student.mobileNo,
         });
       } else {
         console.warn("Failed to fetch college ID:", student.message);
@@ -210,7 +214,10 @@ const AllComplaints = () => {
   };
 
   const handleRefresh = () => {
-    fetchIssues(true);
+    setPage(1);
+    setHasMore(true);
+    setIssues([]);
+    fetchIssues();
   };
 
   return (
@@ -271,13 +278,36 @@ const AllComplaints = () => {
                     {selectedIssue.collegeId}
                   </Text>
                   <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Mobile No: </Text>
+                    <View style={styles.mobileContainer}>
+                      <Text style={styles.clickableText}>
+                        {selectedIssue.mobileNo || "N/A"}
+                      </Text>
+                      {selectedIssue.mobileNo && (
+                        <TouchableOpacity
+                          onPress={() =>
+                            Linking.openURL(`tel:${selectedIssue.mobileNo}`)
+                          }
+                        >
+                          <Ionicons
+                            name="call"
+                            size={20}
+                            color="blue"
+                            style={styles.icon}
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </Text>
+                  <Text style={styles.modalContent}>
                     <Text style={styles.modalSubTitle}>Created At: </Text>
                     {selectedIssue.createdAt
-                      ? new Date(
-                          selectedIssue.createdAt.seconds * 1000
-                        ).toLocaleString()
+                      ? new Date(selectedIssue.createdAt.seconds * 1000)
+                          .toLocaleString()
+                          .split(",")[0] // Splitting the string by "," and displaying the 0th indexed element
                       : "N/A"}
                   </Text>
+
                   {selectedIssue.image ? (
                     <Image
                       source={{ uri: selectedIssue.image }}
@@ -389,6 +419,19 @@ const styles = StyleSheet.create({
   modalSubTitle: {
     fontWeight: "bold",
   },
+  mobileContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  clickableText: {
+    fontSize: 16,
+    color: "#000",
+    marginRight: 8,
+  },
+  icon: {
+    marginLeft: 8,
+  },
+
   modalCloseButton: {
     marginTop: 10,
     padding: 10,

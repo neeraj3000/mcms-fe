@@ -184,7 +184,6 @@ const QualityInspectionPage = () => {
         <View key={category} style={styles.categoryContainer}>
           <Text style={styles.categoryText}>{category}</Text>
 
-          {/* Render RNPickerSelect for all options except the last one */}
           <RNPickerSelect
             onValueChange={(value) => handleRatingChange(category, value)}
             items={[...Array(10).keys()].map((num) => ({
