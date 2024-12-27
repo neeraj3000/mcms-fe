@@ -76,29 +76,76 @@ export const getStudentDetailsByUserId = async (userId) => {
   }
 };
 // Register Student and User
-export const registerStudent = async (name, collegeId, mobileNo, gender, batch, email, password) => {
+export const registerStudent = async (
+  name,
+  collegeId,
+  mobileNo,
+  gender,
+  batch,
+  email,
+  password
+) => {
   try {
-    if (!name || !collegeId || !mobileNo || !gender || !batch || !email || !password) {
-      throw new Error('All fields are required');
+    // Validate input fields
+    if (
+      !name ||
+      !collegeId ||
+      !mobileNo ||
+      !gender ||
+      !batch ||
+      !email ||
+      !password
+    ) {
+      throw new Error("All fields are required");
     }
 
-    const usersRef = collection(firestore, 'users');
-    const studentsRef = collection(firestore, 'Student');
+    const usersRef = collection(firestore, "users");
+    const studentsRef = collection(firestore, "Student");
 
-    const lastUserQuery = query(usersRef, orderBy('userId', 'desc'), limit(1));
+    // Check if the email already exists in the users collection
+    const emailQuery = query(usersRef, where("email", "==", email));
+    const emailSnapshot = await getDocs(emailQuery);
+
+    if (!emailSnapshot.empty) {
+      // If email already exists, return a message indicating that
+      return { success: false, message: "User already exists with this email" };
+    }
+
+    // Check if the collegeId already exists in the students collection
+    const collegeIdQuery = query(
+      studentsRef,
+      where("collegeId", "==", collegeId)
+    );
+    const collegeIdSnapshot = await getDocs(collegeIdQuery);
+
+    if (!collegeIdSnapshot.empty) {
+      // If collegeId already exists, return a message indicating that
+      return {
+        success: false,
+        message: "Student already exists with this college ID",
+      };
+    }
+
+    // Generate a new userId by querying the last userId from the users collection
+    const lastUserQuery = query(usersRef, orderBy("userId", "desc"), limit(1));
     const lastUserSnapshot = await getDocs(lastUserQuery);
-    const newUserId = lastUserSnapshot.empty ? 1 : lastUserSnapshot.docs[0].data().userId + 1;
+    const newUserId = lastUserSnapshot.empty
+      ? 1
+      : lastUserSnapshot.docs[0].data().userId + 1;
 
+    // Create user data
     const userData = {
       userId: newUserId,
-      role: 'student',
+      role: "student",
       email,
-      password, // Plain text password
+      password, // Store plain text password (you should consider hashing it for security)
       createdAt: Timestamp.now(),
     };
 
+    // Add user document to the 'users' collection
     await setDoc(doc(usersRef, newUserId.toString()), userData);
 
+    // Create student data
     const studentData = {
       userId: newUserId,
       name,
@@ -110,9 +157,14 @@ export const registerStudent = async (name, collegeId, mobileNo, gender, batch, 
       createdAt: Timestamp.now(),
     };
 
+    // Add student document to the 'Student' collection
     await addDoc(studentsRef, studentData);
 
-    return { success: true, message: 'Student registered successfully', userId: newUserId };
+    return {
+      success: true,
+      message: "Student registered successfully",
+      userId: newUserId,
+    };
   } catch (err) {
     console.error(err);
     throw new Error(err.message);

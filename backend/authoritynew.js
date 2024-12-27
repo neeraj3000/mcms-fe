@@ -2,6 +2,7 @@
 import { collection, query, where, orderBy, limit, getDocs, addDoc, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"; 
 import { Timestamp } from "firebase/firestore"; // For timestamps
 import { firestore } from './firebase'; // Import Firestore configuration from your firebase.js
+import * as FileSystem from "expo-file-system";
 
 // const SALT_ROUNDS = 10; // Define the number of salt rounds for bcrypt
 
@@ -302,4 +303,79 @@ export async function getAuthorityByUserId(userId) {
     }
   }
 
-  
+export async function uploadToCloudinary(image, type) {
+  try {
+    console.log("Starting Cloudinary upload...");
+    console.log("Image path:", image);
+    console.log("Image type:", type);
+
+    if (!image || typeof image !== "string") {
+      throw new Error("Invalid image path provided.");
+    }
+
+    const cloudinaryUrl = "https://api.cloudinary.com/v1_1/dwi8fucyt/upload";
+    const uploadPreset = "mcms-issue";
+
+    console.log("Reading image as Base64...");
+    const blob = await FileSystem.readAsStringAsync(image, {
+      encoding: "base64",
+    });
+    console.log("Base64 string created. Length:", blob.length);
+
+    console.log("Preparing form data...");
+    const formData = new FormData();
+    formData.append("file", `data:${type}/;base64,${blob}`);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("cloud_name", "dwi8fucyt");
+
+    console.log("Sending request to Cloudinary...");
+    const uploadResponse = await fetch(cloudinaryUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    console.log("Response received from Cloudinary.");
+    const responseData = await uploadResponse.json();
+    console.log("Cloudinary response data:", responseData);
+
+    if (responseData.secure_url) {
+      console.log("Image uploaded successfully:", responseData.secure_url);
+      return responseData.secure_url;
+    } else {
+      throw new Error(responseData.error?.message || "Image upload failed");
+    }
+  } catch (err) {
+    console.error("Error during Cloudinary upload:", err);
+    throw new Error(err.message);
+  }
+}
+
+  // Function to create a new messsurvey document with optional image (null if not provided)
+export const createMessSurvey = async (messNo, remarks, imageUrl, datetime) => {
+  try {
+    const messSurveyRef = collection(firestore, "messsurvey");
+
+    // If an imageUrl is provided, upload it to Cloudinary, otherwise set image to null
+    let cloudinaryImageUrl = null;
+    if (imageUrl) {
+      const imageType = imageUrl.split('.').pop(); // Get image type (extension)
+      cloudinaryImageUrl = await uploadToCloudinary(imageUrl, imageType); // Upload and get Cloudinary URL
+    }
+
+    // Prepare the document data
+    const surveyData = {
+      messNo,
+      remarks,
+      datetime,
+      image: cloudinaryImageUrl || null, // Set image to null if no imageUrl is provided
+    };
+
+    // Add the document to the messsurvey collection
+    const docRef = await addDoc(messSurveyRef, surveyData);
+    console.log("Document created with ID: ", docRef.id);
+    return { success: true, message: "Survey created successfully", id: docRef.id };
+  } catch (err) {
+    console.error("Error adding document: ", err);
+    return { success: false, message: err.message };
+  }
+};

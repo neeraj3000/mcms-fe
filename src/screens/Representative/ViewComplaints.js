@@ -9,12 +9,10 @@ import {
   FlatList,
   Modal,
   TouchableWithoutFeedback,
-  Keyboard,
   Linking,
   Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import Ionicons from "react-native-vector-icons/Ionicons"; 
 import RefreshButton from "../../components/RefreshButton";
 import {
   getMessNoByUserId,
@@ -23,13 +21,31 @@ import {
 } from "@/backend/issuesnew";
 import { useSession } from "@/src/SessionContext";
 import { getStudentById } from "../../../backend/studentnew";
+import { Ionicons } from "@expo/vector-icons";
+
+const getStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "#ff9800"; // Orange
+    case "reraised":
+      return "#f44336"; // Red
+    case "forwarded":
+      return "#2196f3"; // Blue
+    case "resolved":
+      return "#228B22"; // green
+    default:
+      return "#888"; // Default grey
+  }
+};
 
 const IssueItem = React.memo(
   ({ id, title, status, onResolve, onForward, onPress }) => (
     <View style={styles.issueItem}>
       <TouchableOpacity onPress={onPress} style={styles.issueContent}>
         <Text style={styles.issueTitle}>{title}</Text>
-        <Text style={styles.issueStatus}>{status}</Text>
+        <Text style={[styles.issueStatus, { color: getStatusColor(status) }]}>
+          {status}
+        </Text>
       </TouchableOpacity>
       {status !== "resolved" && status !== "forwarded" && (
         <View style={styles.resolveContainer}>
@@ -70,7 +86,6 @@ const AllComplaints = () => {
     try {
       if (!user || !user.id) {
         console.error("User or user ID is missing");
-        Alert.alert("Error", "Failed to fetch user information.");
         return;
       }
 
@@ -114,7 +129,6 @@ const AllComplaints = () => {
   useEffect(() => {
     fetchIssues();
   }, [page, user]);
-
 
   const handleResolve = async (id, index) => {
     Alert.alert(
@@ -181,13 +195,13 @@ const AllComplaints = () => {
     try {
       // Fetch the student data for the college ID
       const student = await getStudentById(issue.userId);
-      console.log(student)
-      console.log(student.success)
+      console.log(student);
+      console.log(student.success);
       if (student.success) {
         // If successful, add the collegeId to the issue object
-        console.log(student)
-        console.log(student.studentData)
-        
+        console.log(student);
+        console.log(student.studentData);
+
         setSelectedIssue({
           ...issue,
           collegeId: student.student.collegeId,
@@ -206,7 +220,6 @@ const AllComplaints = () => {
       setModalLoading(false);
     }
   };
-
 
   const closeModal = () => {
     setModalVisible(false);
@@ -228,7 +241,7 @@ const AllComplaints = () => {
         renderItem={({ item, index }) => (
           <IssueItem
             id={item.id}
-            title={item.description}
+            title={item.category}
             status={item.status}
             onResolve={() => handleResolve(item.id, index)}
             onForward={() => handleForward(item.id, index)}
@@ -260,7 +273,19 @@ const AllComplaints = () => {
                 <ActivityIndicator size="large" color="#007bff" />
               ) : selectedIssue ? (
                 <>
+                  <TouchableOpacity onPress={closeModal}>
+                    <Ionicons
+                      name="close"
+                      size={30}
+                      color="grey"
+                      style={styles.closeIcon}
+                    />
+                  </TouchableOpacity>
                   <Text style={styles.modalTitle}>Issue Details</Text>
+                  <Text style={styles.modalContent}>
+                    <Text style={styles.modalSubTitle}>Issue Title: </Text>
+                    {selectedIssue.category}
+                  </Text>
                   <Text style={styles.modalContent}>
                     <Text style={styles.modalSubTitle}>Description: </Text>
                     {selectedIssue.description}
@@ -283,28 +308,26 @@ const AllComplaints = () => {
                       <Text style={styles.clickableText}>
                         {selectedIssue.mobileNo || "N/A"}
                       </Text>
+                      {console.log(selectedIssue)}
                       {selectedIssue.mobileNo && (
                         <TouchableOpacity
+                          style={styles.callButton}
                           onPress={() =>
                             Linking.openURL(`tel:${selectedIssue.mobileNo}`)
                           }
                         >
-                          <Ionicons
-                            name="call"
-                            size={20}
-                            color="blue"
-                            style={styles.icon}
-                          />
+                          <Text style={styles.callButtonText}>Call</Text>
                         </TouchableOpacity>
                       )}
                     </View>
                   </Text>
+
                   <Text style={styles.modalContent}>
                     <Text style={styles.modalSubTitle}>Created At: </Text>
                     {selectedIssue.createdAt
                       ? new Date(selectedIssue.createdAt.seconds * 1000)
                           .toLocaleString()
-                          .split(",")[0] // Splitting the string by "," and displaying the 0th indexed element
+                          .split(",")[0] 
                       : "N/A"}
                   </Text>
 
@@ -316,12 +339,7 @@ const AllComplaints = () => {
                   ) : (
                     <Text style={styles.noImageText}>No Image Available</Text>
                   )}
-                  <TouchableOpacity
-                    onPress={closeModal}
-                    style={styles.modalCloseButton}
-                  >
-                    <Text style={styles.modalCloseText}>Close</Text>
-                  </TouchableOpacity>
+                  
                 </>
               ) : null}
             </View>
@@ -391,6 +409,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 5,
   },
+  closeIcon: {
+    position: "absolute",
+    top: -15,
+    left: 240,
+  },
   resolveText: {
     color: "#fff",
     marginLeft: 5,
@@ -408,6 +431,7 @@ const styles = StyleSheet.create({
     width: 300,
   },
   modalTitle: {
+    textAlign:"center",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
@@ -415,23 +439,37 @@ const styles = StyleSheet.create({
   modalContent: {
     fontSize: 16,
     marginBottom: 10,
+    alignItems: "flex-end",
   },
   modalSubTitle: {
     fontWeight: "bold",
+    alignItems: "center",
+  },
+  modalsubTitle: {
+    fontWeight: "bold",
+    alignItems: "center",
   },
   mobileContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
+    marginTop: 8,
   },
   clickableText: {
     fontSize: 16,
     color: "#000",
     marginRight: 8,
   },
-  icon: {
-    marginLeft: 8,
+  callButton: {
+    backgroundColor: "#007bff", // Blue color for the button
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
   },
-
+  callButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
   modalCloseButton: {
     marginTop: 10,
     padding: 10,
@@ -474,6 +512,5 @@ const styles = StyleSheet.create({
     color: "#cccccc",
   },
 });
-
 
 export default AllComplaints;

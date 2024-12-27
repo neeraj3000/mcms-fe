@@ -9,13 +9,30 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
-import RefreshButton from "../../components/RefreshButton"; // Import RefreshButton component
-import { getAllIssues } from "../../../backend/issuesnew";
+import RefreshButton from "../../components/RefreshButton";
+import { getAllIssues, getUserVote } from "../../../backend/issuesnew";
+
+const getStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case "resolved":
+      return "green";
+    case "pending":
+      return "orange";
+    case "reraised":
+      return "red";
+    default:
+      return "#888"; // Default color for unknown statuses
+  }
+};
+
 
 const IssuesList = () => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [votes, setVotes] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [selectedMess, setSelectedMess] = useState("all");
@@ -28,16 +45,33 @@ const IssuesList = () => {
   };
 
   const fetchIssues = async () => {
+    if (loading || !hasMore) return;
     setLoading(true);
     try {
       const response = await getAllIssues();
       if (response.success) {
         const issuesData = response.issues;
-        const filteredIssues =
-          selectedMess === "all"
-            ? issuesData
-            : issuesData.filter((issue) => issue.messNo === selectedMess);
-        setIssues(filteredIssues);
+
+        if (Array.isArray(issuesData)) {
+          const filteredIssues =
+            selectedMess === "all"
+              ? issuesData
+              : issuesData.filter(
+                  (issue) => issue.messNo.toString() === selectedMess
+                );
+
+          // Calculate total votes and sort by total votes in descending order
+          const sortedIssues = filteredIssues.sort((a, b) => {
+            const totalVotesA = (a.upvotes || 0) + (a.downvotes || 0);
+            const totalVotesB = (b.upvotes || 0) + (b.downvotes || 0);
+            return totalVotesB - totalVotesA; // Sort in descending order
+          });
+
+          setIssues(sortedIssues);
+          setHasMore(sortedIssues.length > 0);
+        } else {
+          setHasMore(false);
+        }
       }
     } catch (error) {
       console.error("Error fetching issues:", error);
@@ -45,6 +79,7 @@ const IssuesList = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchIssues();
@@ -56,21 +91,19 @@ const IssuesList = () => {
   };
 
   const closeModal = () => {
-    setSelectedIssue(null);
     setModalVisible(false);
+    setSelectedIssue(null);
   };
 
   const refreshIssues = () => {
-    setPage(1);
-    setHasMore(true);
     setIssues([]);
+    setHasMore(true);
     fetchIssues();
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>All Issues</Text>
-
       <Picker
         selectedValue={selectedMess}
         style={styles.picker}
@@ -78,11 +111,7 @@ const IssuesList = () => {
       >
         <Picker.Item label="All Messes" value="all" />
         {[...Array(8).keys()].map((i) => (
-          <Picker.Item
-            key={i + 1}
-            label={`Mess ${i + 1}`}
-            value={(i + 1).toString()}
-          />
+          <Picker.Item key={i} label={`Mess ${i + 1}`} value={`${i + 1}`} />
         ))}
       </Picker>
 
@@ -95,65 +124,79 @@ const IssuesList = () => {
             style={styles.issueItem}
             onPress={() => openModal(item)}
           >
-            <Text style={styles.issueTitle}>{item.description}</Text>
-            <Text style={styles.issueStatus}>{item.status}</Text>
-            <View style={styles.voteContainerNone}>
-              <Text style={styles.voteTextRight}>
-                🚀 {item.upvotes || 0} 💥 {item.downvotes || 0}
+            <Text style={styles.issueTitle}>{item.category}</Text>
+            <Text
+              style={[
+                styles.issueStatus,
+                { color: getStatusColor(item.status) },
+              ]}
+            >
+              {item.status}
+            </Text>
+            <View style={styles.voteContainer}>
+              <Text style={styles.voteText}>
+                🚀 {votes[item.id]?.upvotes || item.upvotes || 0} | 💥{" "}
+                {votes[item.id]?.downvotes || item.downvotes || 0}
               </Text>
             </View>
           </TouchableOpacity>
         )}
         keyExtractor={(item) => item.id.toString()}
         ListFooterComponent={
-          loading ? (
-            <ActivityIndicator size="large" color={colors.primary} />
-          ) : null
+          loading && <ActivityIndicator size="large" color={colors.primary} />
         }
       />
 
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {selectedIssue && (
-              <>
-                <Text style={styles.modalTitle}>Issue Details</Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Category:</Text>{" "}
-                  {selectedIssue.category || "N/A"}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Description:</Text>{" "}
-                  {selectedIssue.description}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Mess No:</Text>{" "}
-                  {selectedIssue.messNo}
-                </Text>
-                {selectedIssue.image ? (
-                  <Image
-                    source={{ uri: selectedIssue.image }}
-                    style={styles.modalImage}
-                  />
-                ) : (
-                  <Text style={styles.noImageText}>No Image Available</Text>
-                )}
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={closeModal}
-                >
-                  <Text style={styles.closeButtonText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
+      {modalVisible && selectedIssue && (
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={closeModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <TouchableOpacity onPress={closeModal}>
+                <Ionicons
+                  name="close"
+                  size={30}
+                  color="grey"
+                  style={styles.closeIcon}
+                />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Issue Details</Text>
+              <Text style={styles.modalText}>
+                <Text style={styles.modalLabel}>Issue Title:</Text>{" "}
+                {selectedIssue.category || "N/A"}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={styles.modalLabel}>Description:</Text>{" "}
+                {selectedIssue.description}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={styles.modalLabel}>Mess No:</Text>{" "}
+                {selectedIssue.messNo}
+              </Text>
+              <Text style={styles.modalText}>
+                <Text style={styles.modalLabel}>Created At:</Text>{" "}
+                {selectedIssue.createdAt
+                  ? new Date(selectedIssue.createdAt.seconds * 1000)
+                      .toLocaleString()
+                      .split(",")[0]
+                  : "N/A"}
+              </Text>
+              {selectedIssue.image ? (
+                <Image
+                  source={{ uri: selectedIssue.image }}
+                  style={styles.modalImage}
+                />
+              ) : (
+                <Text style={styles.noImageText}>No Image Available</Text>
+              )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -182,11 +225,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#fff",
     borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    elevation: 3,
   },
   issueTitle: {
     fontSize: 16,
@@ -197,11 +236,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
   },
-  voteContainerNone: {
+  voteContainer: {
     marginTop: 10,
     alignItems: "flex-end",
   },
-  voteTextRight: {
+  voteText: {
     fontSize: 14,
     color: "#007bff",
   },
@@ -233,23 +272,27 @@ const styles = StyleSheet.create({
   modalImage: {
     width: "100%",
     height: 200,
-    resizeMode: "cover",
-    borderRadius: 10,
+    borderRadius: 8,
     marginBottom: 15,
   },
   closeButton: {
-    marginTop: 20,
-    padding: 10,
     backgroundColor: "#007bff",
+    padding: 10,
     borderRadius: 5,
+    marginTop: 10,
   },
   closeButtonText: {
     color: "#fff",
     textAlign: "center",
   },
   noImageText: {
-    color: "#888",
     fontStyle: "italic",
+    color: "#888",
+  },
+  closeIcon: {
+    position: "absolute",
+    top: -15,
+    left: 240,
   },
 });
 
