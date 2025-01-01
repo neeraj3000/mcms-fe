@@ -11,12 +11,11 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import RefreshButton from "../../components/RefreshButton"; // Import the RefreshButton component
+import RefreshButton from "../../components/RefreshButton";
 import { getAllIssues } from "../../../backend/issuesnew";
 import { useSession } from "../../SessionContext";
 import { handleVote, getUserVote } from "../../../backend/isvoted";
 import { Ionicons } from "@expo/vector-icons";
-
 
 const IssuesWithVote = () => {
   const { user } = useSession();
@@ -28,6 +27,8 @@ const IssuesWithVote = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [votes, setVotes] = useState({});
   const [selectedMess, setSelectedMess] = useState("all");
+  const [loadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [votingModalVisible, setVotingModalVisible] = useState(false); // Voting modal visibility state
 
   const colors = {
     primary: "#007bff", // Blue
@@ -40,6 +41,7 @@ const IssuesWithVote = () => {
   const fetchIssues = async () => {
     if (loading || !hasMore) return;
     setLoading(true);
+    setLoadingModalVisible(true); // Show loading modal
     try {
       const response = await getAllIssues();
       if (response.success) {
@@ -82,6 +84,7 @@ const IssuesWithVote = () => {
     } catch (error) {
     } finally {
       setLoading(false);
+      setLoadingModalVisible(false); // Hide loading modal
     }
   };
 
@@ -90,6 +93,7 @@ const IssuesWithVote = () => {
   }, [selectedMess]);
 
   const handleVotes = async (id, voteType) => {
+    setVotingModalVisible(true); // Show voting modal when voting is triggered
     try {
       const response = await handleVote(id, user.id, voteType);
       if (response?.success) {
@@ -127,6 +131,8 @@ const IssuesWithVote = () => {
       }
     } catch (error) {
       Alert.alert("Error", "Failed to process the vote.");
+    } finally {
+      setVotingModalVisible(false); // Hide voting modal after vote processing
     }
   };
 
@@ -173,7 +179,7 @@ const IssuesWithVote = () => {
         renderItem={({ item }) => (
           <View style={styles.issueItem}>
             <TouchableOpacity onPress={() => openModal(item)}>
-              <Text style={styles.issueTitle}>{item.description}</Text>
+              <Text style={styles.issueTitle}>{item.category}</Text>
               <Text style={styles.issueStatus}>{item.status}</Text>
             </TouchableOpacity>
 
@@ -219,15 +225,39 @@ const IssuesWithVote = () => {
           </View>
         )}
         keyExtractor={(item) => item.id.toString()}
-        ListFooterComponent={
-          loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#007bff" />
-              <Text style={styles.loadingText}> Loading...</Text>
-            </View>
-          ) : null
-        }
       />
+
+      {/* Loading Modal */}
+      <Modal
+        visible={loadingModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLoadingModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.loadingModalContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingModalText}>Loading Issues...</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Voting Modal */}
+      <Modal
+        visible={votingModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVotingModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.loadingModalContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingModalText}>Processing Vote...</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Issue Details Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -248,34 +278,17 @@ const IssuesWithVote = () => {
                 </TouchableOpacity>
                 <Text style={styles.modalTitle}>Issue Details</Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Issue Title:</Text>{" "}
-                  {selectedIssue.category || "N/A"}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Description:</Text>{" "}
+                  <Text style={styles.modalLabel}>Description: </Text>
                   {selectedIssue.description}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Mess No:</Text>{" "}
-                  {selectedIssue.messNo}
+                  <Text style={styles.modalLabel}>Category: </Text>
+                  {selectedIssue.category}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Created At:</Text>{" "}
-                  {selectedIssue.createdAt
-                    ? new Date(selectedIssue.createdAt.seconds * 1000)
-                        .toLocaleString()
-                        .split(",")[0]
-                    : "N/A"}
+                  <Text style={styles.modalLabel}>Status: </Text>
+                  {selectedIssue.status}
                 </Text>
-
-                {selectedIssue.image ? (
-                  <Image
-                    source={{ uri: selectedIssue.image }}
-                    style={styles.modalImage}
-                  />
-                ) : (
-                  <Text style={styles.noImageText}>No Image Available</Text>
-                )}
               </>
             )}
           </View>
@@ -419,6 +432,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: "#cccccc",
+  },
+
+  loadingModalContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 8,
+    width: 250,
+  },
+  loadingModalText: {
+    fontSize: 18,
+    marginTop: 10,
+    color: "#007bff",
   },
 });
 
