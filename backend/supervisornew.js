@@ -376,3 +376,32 @@ export const getSupervisorByUserId = async (userId) => {
     return { success: false, error: err.message };
   }
 };
+
+// Get Mess ID by User ID
+export async function getMessIdByUserId(userId) {
+  try {
+    if (!userId) {
+      throw new Error("User ID is required.");
+    }
+
+    // Reference to the 'supervisor' collection
+    const supervisorRef = collection(firestore, "supervisor");
+
+    // Query to find the document with the given userId
+    const snapshot = await getDocs(
+      query(supervisorRef, where("userId", "==", userId))
+    );
+
+    if (snapshot.empty) {
+      throw new Error("No supervisor found for the given User ID.");
+    }
+
+    // Extract the messId from the first matching document
+    const messId = snapshot.docs[0].data().messId;
+
+    return { success: true, messId };
+  } catch (err) {
+    console.error("Error getting messId by userId:", err);
+    return { success: false, error: err.message };
+  }
+}

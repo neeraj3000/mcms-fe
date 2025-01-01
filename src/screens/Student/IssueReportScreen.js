@@ -7,8 +7,6 @@ import {
   StyleSheet,
   Image,
   Alert,
-  Platform,
-  PermissionsAndroid,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -24,6 +22,7 @@ const ReportIssue = () => {
 
   useEffect(() => {
     if (!user) {
+      Alert.alert("Unauthenticated", "Please log in to report an issue.");
     }
   }, [user]);
 
@@ -62,14 +61,13 @@ const ReportIssue = () => {
     if (!issueType || !description || !messNo) {
       return Alert.alert("Error", "Please fill in all the fields.");
     }
-    console.log(user);
-    console.log(user.id);
+
     try {
       const issueData = {
         description,
-        category:issueType,
+        category: issueType,
         image,
-        userId:user.id,
+        userId: user.id,
         messNo: messNo,
       };
 
@@ -91,7 +89,16 @@ const ReportIssue = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Report Issue</Text>
+      <View style={styles.iconWrapper}>
+        <Image
+          source={require("../../../assets/images/issue-icon.png")} // Replace with your icon path
+          style={styles.icon}
+        />
+      </View>
+      <Text style={styles.title}>Report an Issue</Text>
+      <Text style={styles.subtitle}>
+        Please provide details about the issue you're facing.
+      </Text>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Issue Type</Text>
@@ -100,6 +107,7 @@ const ReportIssue = () => {
           onChangeText={setIssueType}
           value={issueType}
           placeholder="Enter issue type"
+          placeholderTextColor="#B0BEC5"
         />
       </View>
 
@@ -112,6 +120,7 @@ const ReportIssue = () => {
           onChangeText={setDescription}
           value={description}
           placeholder="Describe the issue"
+          placeholderTextColor="#B0BEC5"
         />
       </View>
 
@@ -122,6 +131,7 @@ const ReportIssue = () => {
           onChangeText={setMessNo}
           value={messNo}
           placeholder="Enter mess number"
+          placeholderTextColor="#B0BEC5"
           keyboardType="numeric"
         />
       </View>
@@ -144,55 +154,84 @@ const ReportIssue = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFF5F5", // Light red to suggest an issue reporting theme
     padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: "bold",
+    color: "#D32F2F", // Bold red to indicate seriousness
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
     marginBottom: 20,
   },
   inputContainer: {
     marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E57373", // Accent underline for inputs
+    paddingBottom: 10,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
+    color: "#B71C1C", // Dark red for input labels
     marginBottom: 5,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#FFCDD2", // Subtle red for input borders
     padding: 10,
-    borderRadius: 5,
-    backgroundColor: "#fff",
-  },
-  uploadButton: {
-    backgroundColor: "#007BFF",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  uploadButtonText: {
-    color: "#fff",
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    color: "#333",
     fontSize: 16,
   },
+  uploadButton: {
+    backgroundColor: "#FF7043", // Orange for a secondary action
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  uploadButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "500",
+  },
   uploadedImage: {
-    width: 200,
-    height: 200,
+    width: 150,
+    height: 150,
     resizeMode: "contain",
     alignSelf: "center",
     marginBottom: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E57373",
   },
   submitButton: {
-    backgroundColor: "#28A745",
-    padding: 12,
-    borderRadius: 5,
+    backgroundColor: "#D32F2F", // Bold red for the primary action
+    padding: 15,
+    borderRadius: 8,
     alignItems: "center",
+    marginTop: 20,
   },
   submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  iconWrapper: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  icon: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
   },
 });
 

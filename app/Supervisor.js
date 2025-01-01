@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import SupervisorHome from "../src/screens/Supervisor/Superviser";
 import Contact from "../src/screens/Supervisor/Contact";
 import RequestMenuChange from "../src/screens/Supervisor/RequestMenuChnge";
+import ViewIssues from "../src/screens/Supervisor/ViewIssues";
 
 const Drawer = createDrawerNavigator();
 
@@ -80,6 +81,11 @@ const Supervisor = () => {
         name="RequestMenuChange"
         component={RequestMenuChange}
         options={{ title: "Request Menu Change" }}
+      />
+      <Drawer.Screen
+        name="ViewIssues"
+        component={ViewIssues}
+        options={{ title: "View Issues" }}
       />
     </Drawer.Navigator>
   );

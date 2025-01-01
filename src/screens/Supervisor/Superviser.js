@@ -27,11 +27,11 @@ const SupervisorHome = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#E0F7FA",  // Light blue background for the page
     padding: 20,
   },
   header: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#B3E5FC",  // Lighter shade of blue for the header
     padding: 20,
     borderRadius: 10,
     marginBottom: 20,
@@ -40,12 +40,12 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#0277BD",  // A darker blue for the text
     textAlign: "center",
   },
   subHeaderText: {
     fontSize: 16,
-    color: "#ffffff",
+    color: "#0288D1",  // Slightly darker for sub-header text
     textAlign: "center",
     marginTop: 5,
   },
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: "#0288D1",  // Matching the sub-header color
     marginBottom: 15,
     textAlign: "center",
   },
