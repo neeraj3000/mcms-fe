@@ -9,6 +9,9 @@ import {
   updateDoc,
   deleteDoc,
   FieldValue,
+  startAfter,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore"; // Import Timestamp for timestamps
 import * as FileSystem from "expo-file-system";
@@ -114,13 +117,56 @@ export async function createIssue({
 }
 
 // Get All Issues
-export async function getAllIssues() {
+
+// Keep a reference to the last document fetched
+let lastVisibleDocument = null;
+
+export async function getAllIssues(
+  batchSize = 10,
+  reset = false,
+  unresolvedOnly = true
+) {
   try {
-    const snapshot = await getDocs(collection(firestore, "Issues"));
-    console.log(snapshot);
+    // Reset pagination if needed
+    if (reset) {
+      lastVisibleDocument = null;
+    }
+
+    // Create a query for the Issues collection
+    let issuesQuery = query(
+      collection(firestore, "Issues"),
+      orderBy("createdAt", "desc"), // Adjust the field as per your data
+      limit(batchSize)
+    );
+
+    // If unresolvedOnly is true, filter by status
+    if (unresolvedOnly) {
+      issuesQuery = query(issuesQuery, where("status", "!=", "resolved"));
+    }
+
+    // If there's a last visible document, start after it
+    if (lastVisibleDocument) {
+      issuesQuery = query(issuesQuery, startAfter(lastVisibleDocument));
+    }
+
+    const snapshot = await getDocs(issuesQuery);
+
+    // If there are no documents, return an empty result
+    if (snapshot.empty) {
+      return { success: true, issues: [], hasMore: false };
+    }
+
+    // Map the documents to the desired format
     const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    // console.log(issues);
-    return { success: true, issues };
+
+    // Update the last visible document
+    lastVisibleDocument = snapshot.docs[snapshot.docs.length - 1];
+
+    return {
+      success: true,
+      issues,
+      hasMore: snapshot.docs.length === batchSize,
+    };
   } catch (err) {
     console.error(err);
     throw new Error(err.message);

@@ -4,19 +4,18 @@ import {
   StyleSheet,
   Text,
   Alert,
-  FlatList,
+  ScrollView,
   TextInput,
   TouchableOpacity,
 } from "react-native";
 import { Button, ActivityIndicator } from "react-native-paper";
 import MultiSelect from "react-native-multiple-select";
-import { sendNotification, sendToAll } from "../../utils/sendNotifications";
+import { MaterialCommunityIcons } from "react-native-vector-icons"; // Import the icon library
 import {
   initializeMessMenu,
   getMessMenu,
   updateDayMenu,
 } from "../../../backend/messmenunew";
-import { MaterialCommunityIcons } from "react-native-vector-icons"; // Import the icon library
 
 const daysOrder = [
   "Monday",
@@ -144,7 +143,6 @@ const MessMenuPage = () => {
       const { success, message, error } = await updateDayMenu(day, updatedMenu);
       if (success) {
         Alert.alert("Success", message);
-        sendToAll("Menu Update", `Menu is Updated  for ${day}`);
         fetchMessMenu();
       } else {
         setError(error || `Error updating menu for ${day}`);
@@ -184,7 +182,7 @@ const MessMenuPage = () => {
   };
 
   const renderMenuItem = ({ item: day }) => (
-    <View style={styles.menuDay}>
+    <View style={styles.card}>
       <Text style={styles.dayHeader}>{day}</Text>
       {["breakfast", "lunch", "snacks", "dinner"].map((mealType) => (
         <View key={mealType} style={styles.mealContainer}>
@@ -254,34 +252,34 @@ const MessMenuPage = () => {
   );
 
   return (
-    <FlatList
-      data={
-        menu
-          ? Object.keys(menu).sort(
-              (a, b) => daysOrder.indexOf(a) - daysOrder.indexOf(b)
-            )
-          : []
-      }
-      renderItem={renderMenuItem}
-      keyExtractor={(item) => item}
-      ListEmptyComponent={
-        loading ? (
+    <ScrollView style={styles.container}>
+      {" "}
+      {/* Vertical scroll for the entire page */}
+      <ScrollView horizontal={true} style={styles.horizontalScroll}>
+        {" "}
+        {/* Horizontal scroll for each day */}
+        {menu ? (
+          Object.keys(menu)
+            .sort((a, b) => daysOrder.indexOf(a) - daysOrder.indexOf(b))
+            .map((day) => renderMenuItem({ item: day }))
+        ) : loading ? (
           <ActivityIndicator animating={true} size="large" color="#6200ea" />
         ) : (
           <Text>No menu available, initializing...</Text>
-        )
-      }
-      contentContainerStyle={styles.container}
-      style={{ flex: 1 }}
-    />
+        )}
+      </ScrollView>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    padding: 20,
+    flex: 1,
     backgroundColor: "#fff",
+  },
+  horizontalScroll: {
+    flexDirection: "row",
+    marginVertical: 10,
   },
   button: {
     marginVertical: 10,
@@ -302,13 +300,24 @@ const styles = StyleSheet.create({
   addButton: {
     flexShrink: 0, // Prevent the button from shrinking
   },
-  menuDay: {
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 15,
     marginVertical: 15,
+    marginRight: 20,
+    width: 300, // Width for each day to ensure scrolling
+    elevation: 5, // Drop shadow effect for the card
+    shadowColor: "#000", // Shadow color
+    shadowOffset: { width: 0, height: 2 }, // Shadow positioning
+    shadowOpacity: 0.1, // Shadow opacity
+    shadowRadius: 4, // Shadow radius
   },
   dayHeader: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center", // Center the header text
   },
   mealContainer: {
     marginBottom: 20,

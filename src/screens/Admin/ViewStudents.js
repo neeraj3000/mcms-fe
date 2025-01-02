@@ -1,12 +1,25 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, Alert } from "react-native";
 import { Button, Card, TextInput as PaperTextInput } from "react-native-paper";
-import { Provider as PaperProvider } from "react-native-paper";
+import { Provider as PaperProvider, DefaultTheme } from "react-native-paper";
 import {
   getUserByCollegeId,
   updateStudentProfileByCollegeId,
   deleteUserByCollegeId,
 } from "../../../backend/studentnew"; // Adjust the path as needed
+
+const customTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: "#1976D2", // Blue color
+    background: "#FFFFFF", // White background for light theme
+    surface: "#F5F5F5", // Light grey surface
+    text: "#000000", // Black text color
+    placeholder: "#888888", // Placeholder color
+    disabled: "#BDBDBD", // Disabled button/text color
+  },
+};
 
 const ViewStudents = () => {
   const [collegeId, setCollegeId] = useState("");
@@ -74,7 +87,7 @@ const ViewStudents = () => {
   };
 
   return (
-    <PaperProvider>
+    <PaperProvider theme={customTheme}>
       <View style={styles.container}>
         <Text style={styles.title}>Student Management</Text>
         <PaperTextInput
@@ -186,7 +199,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
     textAlign: "center",
-    color: "#1976D2",
+    color: "#1976D2", // Blue title color
   },
   input: {
     marginVertical: 8,
