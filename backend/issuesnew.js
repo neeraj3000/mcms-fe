@@ -127,6 +127,26 @@ export async function getAllIssues() {
   }
 }
 
+
+// Get All Unresolved Issues
+export async function getAllUnresolvedIssues() {
+  try {
+    // Query the Issues collection where status is not 'resolved'
+    const issuesRef = collection(firestore, "Issues");
+    const unresolvedQuery = query(issuesRef, where("status", "!=", "resolved"));
+
+    const snapshot = await getDocs(unresolvedQuery);
+
+    // Map over the snapshot to retrieve issues
+    const issues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    return { success: true, issues };
+  } catch (err) {
+    console.error(err);
+    throw new Error(err.message);
+  }
+}
+
 // Get Single Issue
 export async function getIssueById(id) {
   try {
