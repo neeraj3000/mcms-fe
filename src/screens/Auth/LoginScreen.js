@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -12,6 +12,7 @@ import {
 import { useSession } from "../../SessionContext"; // Import context
 import { loginUser } from "../../../backend/authnew";
 import { registerIndieID, unregisterIndieDevice } from "native-notify";
+import { PermissionsAndroid } from "react-native";
 
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -19,6 +20,11 @@ const LoginPage = ({ navigation }) => {
   const { login } = useSession(); // Access the login function from context
   const [isLoading, setIsLoading] = useState(false); // State for activity indicator
 
+  useEffect(async () => {
+    await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+    );
+  }, []);
   // Handle user login
   const handleLogin = async () => {
     setIsLoading(true); // Show activity indicator before login request
@@ -49,7 +55,7 @@ const LoginPage = ({ navigation }) => {
         name: user.name,
         id: user.userId, // Store the userId
       });
-      registerIndieID(`${user.userId}`, 25679, "XWq6oWFv6eHddwmOo9m6Mv");
+      registerIndieID(`${user.userId}`, 25949, "UuLEHJe9tNRmzE826jjCij");
       // Register for push notifications (only once)
       // ... (implementation details)
 

@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
-  Text,
-  Image,
+  Alert,
+  Animated,
   StyleSheet,
   ActivityIndicator,
-  Animated,
 } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { SessionProvider } from "../src/SessionContext";
-import registerNNPushToken from "native-notify";
+import messaging from "@react-native-firebase/messaging";
 import NotificationInbox from "../src/components/NotificationInbox";
 import LoginPage from "../src/screens/Auth/LoginScreen";
 import RegisterPage from "../src/screens/Auth/RegisterScreen";
@@ -20,38 +19,69 @@ import Supervisor from "./Supervisor";
 import CoordinatorPage from "./CoordinatorPage";
 import AuthorityPage from "./Authority";
 
+messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+  console.log("Message handled in the background!", remoteMessage);
+});
+
 const Stack = createStackNavigator();
 
 // Splash Screen Component
 const SplashScreen = () => {
-  const fadeAnim = useRef(new Animated.Value(0)).current; // Initial opacity is 0
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade-in animation
     Animated.timing(fadeAnim, {
-      toValue: 1, // Fully visible
-      duration: 2000, // Duration in milliseconds
-      useNativeDriver: true, // Use native driver for better performance
+      toValue: 1,
+      duration: 2000,
+      useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
 
   return (
     <View style={styles.splashContainer}>
       <Animated.Image
-        source={require("../assets/images/splash2.png")} // Replace with your image file path
-        style={[styles.fullScreenImage, { opacity: fadeAnim }]} // Bind opacity to fadeAnim
+        source={require("../assets/images/splash2.png")}
+        style={[styles.fullScreenImage, { opacity: fadeAnim }]}
       />
     </View>
   );
 };
 
 const App = () => {
-  registerNNPushToken(25679, "XWq6oWFv6eHddwmOo9m6Mv");
   const [appIsReady, setAppIsReady] = useState(false);
+
+  // Request Notification Permissions
+  const requestNotificationPermission = async () => {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      console.log("Notification permission granted:", authStatus);
+
+      // Get FCM token
+      const token = await messaging().getToken();
+      console.log("FCM Token:", token);
+    } else {
+      console.log("Notification permission denied.");
+    }
+  };
+
+  useEffect(() => {
+    // Check and request permissions
+    requestNotificationPermission();
+
+    // Listen for foreground messages
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      Alert.alert("A new FCM message arrived!", JSON.stringify(remoteMessage));
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const prepareApp = async () => {
-      // Simulate a delay for loading resources
       await new Promise((resolve) => setTimeout(resolve, 4000));
       setAppIsReady(true);
     };
@@ -125,16 +155,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     height: "100%",
-    resizeMode: "cover", // Ensures the image fills the entire screen
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 20,
-  },
-  loader: {
-    marginTop: 10,
+    resizeMode: "cover",
   },
 });
 

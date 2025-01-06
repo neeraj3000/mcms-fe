@@ -5,20 +5,16 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  Alert,
   Modal,
-  Image,
   TouchableOpacity,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import RefreshButton from "../../components/RefreshButton";
+import { useSession } from "../../SessionContext";
 import {
   getAllIssues,
-  getAllUnresolvedIssues,
+  getUserVote,
+  handleVote,
 } from "../../../backend/issuesnew";
-import { useSession } from "../../SessionContext";
-import { handleVote, getUserVote } from "../../../backend/isvoted";
-import { Ionicons } from "@expo/vector-icons";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 const IssuesWithVote = () => {
@@ -29,6 +25,9 @@ const IssuesWithVote = () => {
   const [selectedMess, setSelectedMess] = useState("all");
   const [votes, setVotes] = useState({});
   const [loadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [votingModalVisible, setVotingModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState(null);
 
   const colors = {
     primary: "#007bff",
@@ -45,7 +44,6 @@ const IssuesWithVote = () => {
     setLoadingModalVisible(true);
     try {
       const response = await getAllIssues(10, reset);
-
       if (response.success) {
         const issuesData = response.issues;
         const filteredIssues =
@@ -64,9 +62,7 @@ const IssuesWithVote = () => {
           };
         }
 
-        setIssues((prevIssues) =>
-          reset ? filteredIssues : [...prevIssues, ...filteredIssues]
-        );
+        setIssues(reset ? filteredIssues : [...issues, ...filteredIssues]);
         setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
         setHasMore(response.hasMore);
       }
@@ -78,14 +74,46 @@ const IssuesWithVote = () => {
     }
   };
 
+  const handleVotes = async (issueId, type) => {
+    setVotingModalVisible(true);
+    try {
+      const success = await handleVote(issueId, user.id, type);
+      if (success) {
+        setVotes((prevVotes) => {
+          const issueVotes = prevVotes[issueId] || {};
+          return {
+            ...prevVotes,
+            [issueId]: {
+              ...issueVotes,
+              [type]: (issueVotes[type] || 0) + 1,
+              upvoted: type === "upvotes",
+              downvoted: type === "downvotes",
+            },
+          };
+        });
+      } else {
+        Alert.alert("Error", "Failed to register vote. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error handling vote:", error);
+    } finally {
+      setVotingModalVisible(false);
+    }
+  };
+
+  const openModal = (issue) => {
+    setSelectedIssue(issue);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setSelectedIssue(null);
+    setModalVisible(false);
+  };
+
   useEffect(() => {
     fetchIssues(true); // Reset issues when `selectedMess` changes
   }, [selectedMess]);
-
-  const refreshIssues = () => {
-    setHasMore(true);
-    fetchIssues(true); // Reset and fetch the first batch
-  };
 
   return (
     <View style={styles.container}>
@@ -104,33 +132,17 @@ const IssuesWithVote = () => {
           />
         ))}
       </Picker>
-      <RefreshButton onRefresh={refreshIssues} />
       <FlatList
         data={issues}
         renderItem={({ item }) => (
           <View style={styles.issueItem}>
             <View style={styles.issueHeader}>
-              <View style={styles.issueTextContainer}>
-                <TouchableOpacity onPress={() => openModal(item)}>
-                  <Text style={styles.issueTitle}>{item.category}</Text>
-                  <Text
-                    style={[
-                      styles.issueStatus,
-                      item.status === "resolved" && styles.resolvedStatus,
-                      item.status === "pending" && styles.pendingStatus,
-                      item.status === "reraised" && styles.reraisedStatus,
-                    ]}
-                  >
-                    {item.status}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Vote Icons */}
+              <TouchableOpacity onPress={() => openModal(item)}>
+                <Text style={styles.issueTitle}>{item.category}</Text>
+                <Text style={styles.issueStatus}>{item.status}</Text>
+              </TouchableOpacity>
               <View style={styles.voteContainer}>
-                {/* Upvote Button */}
                 <TouchableOpacity
-                  style={styles.voteButton}
                   onPress={() => handleVotes(item.id, "upvotes")}
                 >
                   <Icon
@@ -139,24 +151,12 @@ const IssuesWithVote = () => {
                     }
                     size={30}
                     color={votes[item.id]?.upvoted ? colors.secondary : "green"}
-                    style={[
-                      styles.iconWithBorder,
-                      {
-                        borderColor: votes[item.id]?.upvoted
-                          ? colors.secondary
-                          : "green",
-                      },
-                    ]}
                   />
-                  <Text style={styles.voteText}>
-                    {votes[item.id]?.upvotes || 0}
-                  </Text>
+                  <Text>{votes[item.id]?.upvotes || 0}</Text>
                 </TouchableOpacity>
-
-                {/* Downvote Button */}
                 <TouchableOpacity
-                  style={styles.voteButton}
-                  >
+                  onPress={() => handleVotes(item.id, "downvotes")}
+                >
                   <Icon
                     name={
                       votes[item.id]?.downvoted
@@ -165,18 +165,8 @@ const IssuesWithVote = () => {
                     }
                     size={30}
                     color={votes[item.id]?.downvoted ? colors.danger : "red"}
-                    style={[
-                      styles.iconWithBorder,
-                      {
-                        borderColor: votes[item.id]?.downvoted
-                          ? colors.danger
-                          : "red",
-                      },
-                    ]}
                   />
-                  <Text style={styles.voteText}>
-                    {votes[item.id]?.downvotes || 0}
-                  </Text>
+                  <Text>{votes[item.id]?.downvotes || 0}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -184,72 +174,14 @@ const IssuesWithVote = () => {
         )}
         keyExtractor={(item) => item.id.toString()}
       />
-
-      {/* Loading Modal */}
-      <Modal
-        visible={loadingModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setLoadingModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.loadingModalContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingModalText}>Loading Issues...</Text>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Voting Modal */}
-      <Modal
-        visible={votingModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setVotingModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.loadingModalContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingModalText}>Processing Vote...</Text>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Issue Details Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {selectedIssue && (
-              <>
-                <TouchableOpacity onPress={closeModal}>
-                  <Ionicons
-                    name="close"
-                    size={30}
-                    color="grey"
-                    style={styles.closeIcon}
-                  />
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Issue Details</Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Description: </Text>
-                  {selectedIssue.description}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Category: </Text>
-                  {selectedIssue.category}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Status: </Text>
-                  {selectedIssue.status}
-                </Text>
-              </>
-            )}
-          </View>
+      <Modal visible={modalVisible} onRequestClose={closeModal}>
+        <View style={styles.modalContainer}>
+          {selectedIssue && (
+            <>
+              <Text style={styles.modalTitle}>{selectedIssue.category}</Text>
+              <Text>{selectedIssue.description}</Text>
+            </>
+          )}
         </View>
       </Modal>
     </View>
