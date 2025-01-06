@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Image,
   TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -115,7 +116,7 @@ const ViewIssues = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>All Issues</Text>
+      <Text style={styles.title}>All Complaints</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#007bff" />
       ) : (
@@ -163,6 +164,27 @@ const ViewIssues = () => {
                       <Text style={styles.modalSubTitle}>Description: </Text>
                       {selectedIssue.description}
                     </Text>
+
+                    <Text style={styles.modalContent}>
+                      <Text style={styles.modalSubTitle}>Mess No: </Text>
+                      {selectedIssue.messNo}
+                    </Text>
+                    <Text style={styles.modalContent}>
+                      <Text style={styles.modalSubTitle}>Created At: </Text>
+                      {selectedIssue.createdAt
+                        ? new Date(selectedIssue.createdAt.seconds * 1000)
+                            .toLocaleString()
+                            .split(",")[0]
+                        : "N/A"}
+                    </Text>
+                    {selectedIssue.image ? (
+                      <Image
+                        source={{ uri: selectedIssue.image }}
+                        style={styles.modalImage}
+                      />
+                    ) : (
+                      <Text style={styles.noImageText}>No Image Available</Text>
+                    )}
                   </View>
                 </>
               )}
@@ -239,6 +261,16 @@ const styles = StyleSheet.create({
   modalSubTitle: {
     fontWeight: "bold",
     color: "#333",
+  },
+  modalImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  noImageText: {
+    fontStyle: "italic",
+    color: "#888",
   },
 });
 

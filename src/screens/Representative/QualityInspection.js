@@ -172,7 +172,7 @@ const QualityInspectionPage = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Quality Inspection</Text>
-
+      <Text style={styles.categoryText}>Mess number:</Text>
       <TextInput
         style={styles.input}
         placeholder="Mess Number"

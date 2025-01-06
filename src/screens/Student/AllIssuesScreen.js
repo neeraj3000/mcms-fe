@@ -24,67 +24,137 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 const IssuesWithVote = () => {
   const { user } = useSession();
   const [issues, setIssues] = useState([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedMess, setSelectedMess] = useState("all");
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const [votes, setVotes] = useState({});
+  const [selectedMess, setSelectedMess] = useState("all");
   const [loadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [votingModalVisible, setVotingModalVisible] = useState(false); // Voting modal visibility state
 
   const colors = {
-    primary: "#007bff",
-    secondary: "#28a745",
-    danger: "#dc3545",
-    lightGray: "#f2f2f2",
+    primary: "#007bff", // Blue
+    secondary: "#28a745", // Green
+    danger: "#dc3545", // Red
+    lightGray: "#f2f2f2", // Light Gray
     white: "#fff",
   };
 
-  const fetchIssues = async (reset = false) => {
-    if (loading || (!reset && !hasMore)) return;
-
+  const fetchIssues = async () => {
+    if (loading || !hasMore) return;
     setLoading(true);
-    setLoadingModalVisible(true);
+    setLoadingModalVisible(true); // Show loading modal
     try {
-      const response = await getAllIssues(10, reset);
-
+      const response = await getAllUnresolvedIssues();
       if (response.success) {
         const issuesData = response.issues;
-        const filteredIssues =
-          selectedMess === "all"
-            ? issuesData
-            : issuesData.filter((issue) => issue.messNo === selectedMess);
 
-        const newVotes = {};
-        for (const issue of filteredIssues) {
-          const userVote = await getUserVote(issue.id, user.id);
-          newVotes[issue.id] = {
-            upvotes: issue.upvotes || 0,
-            downvotes: issue.downvotes || 0,
-            upvoted: userVote === "upvotes",
-            downvoted: userVote === "downvotes",
-          };
+        if (Array.isArray(issuesData)) {
+          const filteredIssues =
+            selectedMess === "all"
+              ? issuesData
+              : issuesData.filter((issue) => issue.messNo === selectedMess);
+
+          const newVotes = {};
+          for (const issue of filteredIssues) {
+            const userVote = await getUserVote(issue.id, user.id);
+            newVotes[issue.id] = {
+              upvotes: issue.upvotes || 0,
+              downvotes: issue.downvotes || 0,
+              upvoted: userVote === "upvotes",
+              downvoted: userVote === "downvotes",
+            };
+          }
+
+          filteredIssues.sort((a, b) => {
+            const votesA =
+              (votes[a.id]?.upvotes || a.upvotes || 0) +
+              (votes[a.id]?.downvotes || a.downvotes || 0);
+            const votesB =
+              (votes[b.id]?.upvotes || b.upvotes || 0) +
+              (votes[b.id]?.downvotes || b.downvotes || 0);
+            return votesB - votesA; // Descending order
+          });
+
+          setIssues(filteredIssues);
+          setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
+          setHasMore(filteredIssues.length > 0);
+        } else {
+          setHasMore(false);
         }
-
-        setIssues((prevIssues) =>
-          reset ? filteredIssues : [...prevIssues, ...filteredIssues]
-        );
-        setVotes((prevVotes) => ({ ...prevVotes, ...newVotes }));
-        setHasMore(response.hasMore);
       }
     } catch (error) {
-      console.error("Error fetching issues:", error);
     } finally {
       setLoading(false);
-      setLoadingModalVisible(false);
+      setLoadingModalVisible(false); // Hide loading modal
     }
   };
 
   useEffect(() => {
-    fetchIssues(true); // Reset issues when `selectedMess` changes
+    fetchIssues();
   }, [selectedMess]);
 
+  const handleVotes = async (id, voteType) => {
+    setVotingModalVisible(true); // Show voting modal when voting is triggered
+    try {
+      const response = await handleVote(id, user.id, voteType);
+      if (response?.success) {
+        // Alert.alert("Success", response.message);
+
+        setVotes((prevVotes) => {
+          const currentVote = prevVotes[id] || {
+            upvotes: 0,
+            downvotes: 0,
+            upvoted: false,
+            downvoted: false,
+          };
+          const isUpvote = voteType === "upvotes";
+          const isDownvote = voteType === "downvotes";
+
+          return {
+            ...prevVotes,
+            [id]: {
+              upvotes: isUpvote
+                ? currentVote.upvotes + (currentVote.upvoted ? -1 : 1)
+                : currentVote.upvotes - (currentVote.upvoted ? 1 : 0),
+              downvotes: isDownvote
+                ? currentVote.downvotes + (currentVote.downvotes ? -1 : 1)
+                : currentVote.downvotes - (currentVote.downvotes ? 1 : 0),
+              upvoted: isUpvote ? !currentVote.upvoted : false,
+              downvoted: isDownvote ? !currentVote.downvoted : false,
+            },
+          };
+        });
+      } else {
+        Alert.alert(
+          "Error",
+          response?.message || "Failed to process the vote."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to process the vote.");
+    } finally {
+      setVotingModalVisible(false); // Hide voting modal after vote processing
+    }
+  };
+
+  const openModal = (issue) => {
+    setSelectedIssue(issue);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setSelectedIssue(null);
+    setModalVisible(false);
+  };
+
   const refreshIssues = () => {
+    setPage(1);
     setHasMore(true);
-    fetchIssues(true); // Reset and fetch the first batch
+    setIssues([]);
+    fetchIssues();
   };
 
   return (
@@ -108,10 +178,10 @@ const IssuesWithVote = () => {
       <FlatList
         data={issues}
         renderItem={({ item }) => (
-          <View style={styles.issueItem}>
-            <View style={styles.issueHeader}>
-              <View style={styles.issueTextContainer}>
-                <TouchableOpacity onPress={() => openModal(item)}>
+          <TouchableOpacity onPress={() => openModal(item)}>
+            <View style={styles.issueItem}>
+              <View style={styles.issueHeader}>
+                <View style={styles.issueTextContainer}>
                   <Text style={styles.issueTitle}>{item.category}</Text>
                   <Text
                     style={[
@@ -123,64 +193,69 @@ const IssuesWithVote = () => {
                   >
                     {item.status}
                   </Text>
-                </TouchableOpacity>
-              </View>
+                </View>
 
-              {/* Vote Icons */}
-              <View style={styles.voteContainer}>
-                {/* Upvote Button */}
-                <TouchableOpacity
-                  style={styles.voteButton}
-                  onPress={() => handleVotes(item.id, "upvotes")}
-                >
-                  <Icon
-                    name={
-                      votes[item.id]?.upvoted ? "thumb-up" : "thumb-up-off-alt"
-                    }
-                    size={30}
-                    color={votes[item.id]?.upvoted ? colors.secondary : "green"}
-                    style={[
-                      styles.iconWithBorder,
-                      {
-                        borderColor: votes[item.id]?.upvoted
-                          ? colors.secondary
-                          : "green",
-                      },
-                    ]}
-                  />
-                  <Text style={styles.voteText}>
-                    {votes[item.id]?.upvotes || 0}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Downvote Button */}
-                <TouchableOpacity
-                  style={styles.voteButton}
+                {/* Vote Icons */}
+                <View style={styles.voteContainer}>
+                  {/* Upvote Button */}
+                  <TouchableOpacity
+                    style={styles.voteButton}
+                    onPress={() => handleVotes(item.id, "upvotes")}
                   >
-                  <Icon
-                    name={
-                      votes[item.id]?.downvoted
-                        ? "thumb-down"
-                        : "thumb-down-off-alt"
-                    }
-                    size={30}
-                    color={votes[item.id]?.downvoted ? colors.danger : "red"}
-                    style={[
-                      styles.iconWithBorder,
-                      {
-                        borderColor: votes[item.id]?.downvoted
-                          ? colors.danger
-                          : "red",
-                      },
-                    ]}
-                  />
-                  <Text style={styles.voteText}>
-                    {votes[item.id]?.downvotes || 0}
-                  </Text>
-                </TouchableOpacity>
+                    <Icon
+                      name={
+                        votes[item.id]?.upvoted
+                          ? "thumb-up"
+                          : "thumb-up-off-alt"
+                      }
+                      size={30}
+                      color={
+                        votes[item.id]?.upvoted ? colors.secondary : "green"
+                      }
+                      style={[
+                        styles.iconWithBorder,
+                        {
+                          borderColor: votes[item.id]?.upvoted
+                            ? colors.secondary
+                            : "green",
+                        },
+                      ]}
+                    />
+                    <Text style={styles.voteText}>
+                      {votes[item.id]?.upvotes || 0}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Downvote Button */}
+                  <TouchableOpacity
+                    style={styles.voteButton}
+                    onPress={() => handleVotes(item.id, "downvotes")}
+                  >
+                    <Icon
+                      name={
+                        votes[item.id]?.downvoted
+                          ? "thumb-down"
+                          : "thumb-down-off-alt"
+                      }
+                      size={30}
+                      color={votes[item.id]?.downvoted ? colors.danger : "red"}
+                      style={[
+                        styles.iconWithBorder,
+                        {
+                          borderColor: votes[item.id]?.downvoted
+                            ? colors.danger
+                            : "red",
+                        },
+                      ]}
+                    />
+                    <Text style={styles.voteText}>
+                      {votes[item.id]?.downvotes || 0}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         keyExtractor={(item) => item.id.toString()}
       />
@@ -199,7 +274,6 @@ const IssuesWithVote = () => {
           </View>
         </View>
       </Modal>
-
       {/* Voting Modal */}
       <Modal
         visible={votingModalVisible}
@@ -214,7 +288,6 @@ const IssuesWithVote = () => {
           </View>
         </View>
       </Modal>
-
       {/* Issue Details Modal */}
       <Modal
         visible={modalVisible}
@@ -236,17 +309,34 @@ const IssuesWithVote = () => {
                 </TouchableOpacity>
                 <Text style={styles.modalTitle}>Issue Details</Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Description: </Text>
+                  <Text style={styles.modalLabel}>Issue Title:</Text>{" "}
+                  {selectedIssue.category || "N/A"}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Description:</Text>{" "}
                   {selectedIssue.description}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Category: </Text>
-                  {selectedIssue.category}
+                  <Text style={styles.modalLabel}>Mess No:</Text>{" "}
+                  {selectedIssue.messNo}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Status: </Text>
-                  {selectedIssue.status}
+                  <Text style={styles.modalLabel}>Created At:</Text>{" "}
+                  {selectedIssue.createdAt
+                    ? new Date(selectedIssue.createdAt.seconds * 1000)
+                        .toLocaleString()
+                        .split(",")[0]
+                    : "N/A"}
                 </Text>
+
+                {selectedIssue.image ? (
+                  <Image
+                    source={{ uri: selectedIssue.image }}
+                    style={styles.modalImage}
+                  />
+                ) : (
+                  <Text style={styles.noImageText}>No Image Available</Text>
+                )}
               </>
             )}
           </View>

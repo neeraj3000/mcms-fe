@@ -253,11 +253,7 @@ const MessMenuPage = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {" "}
-      {/* Vertical scroll for the entire page */}
       <ScrollView horizontal={true} style={styles.horizontalScroll}>
-        {" "}
-        {/* Horizontal scroll for each day */}
         {menu ? (
           Object.keys(menu)
             .sort((a, b) => daysOrder.indexOf(a) - daysOrder.indexOf(b))

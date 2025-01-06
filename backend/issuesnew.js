@@ -13,7 +13,7 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { Timestamp } from "firebase/firestore"; // Import Timestamp for timestamps
+import { Timestamp,and } from "firebase/firestore"; // Import Timestamp for timestamps
 import * as FileSystem from "expo-file-system";
 import { firestore } from "./firebase"; // Import Firestore configuration from your firebase.js
 import sendNotifications from "@/src/utils/sendNotifications";

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useSession } from "../src/SessionContext";
+import { Alert } from "react-native";
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -22,8 +23,26 @@ const CustomDrawerContent = (props) => {
   const navigation = useNavigation();
 
   const handleLogout = () => {
-    logout();
-    navigation.replace("Login");
+    Alert.alert(
+      "Logout:",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => {}, // Do nothing on cancel
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          onPress: () => {
+            logout();
+            navigation.replace("Login"); // Navigate to Login screen
+          },
+          style: "destructive", // Optional: makes the button red
+        },
+      ],
+      { cancelable: true } // Dismiss alert by tapping outside
+    );
   };
 
   return (
@@ -85,7 +104,7 @@ const Supervisor = () => {
       <Drawer.Screen
         name="ViewIssues"
         component={ViewIssues}
-        options={{ title: "View Issues" }}
+        options={{ title: "View Complaints" }}
       />
     </Drawer.Navigator>
   );
