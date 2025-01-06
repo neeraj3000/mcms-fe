@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import RefreshButton from "../../components/RefreshButton";
-import { getAllIssues } from "@/backend/issuesnew";
+import { getAllIssues, getAllUnresolvedIssues } from "@/backend/issuesnew";
 import { getStudentById } from "../../../backend/studentnew";
 import { updateIssue } from "@/backend/issuesnew";
 
@@ -88,7 +88,7 @@ const ViewComplaints = () => {
 
     setLoading(true);
     try {
-      const response = await getAllIssues();
+      const response = await getAllUnresolvedIssues();
       const issuesData = response.issues;
 
       if (Array.isArray(issuesData)) {

@@ -125,6 +125,7 @@ const AllComplaints = () => {
     }
   };
 
+
   // Initial data fetch
   useEffect(() => {
     fetchIssues();

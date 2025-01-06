@@ -8,6 +8,7 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import ViewMessSupervisor from "../src/screens/Admin/ViewSupervisors";
 
 import { useSession } from "../src/SessionContext";
 import { useNavigation } from "@react-navigation/native";
@@ -101,6 +102,11 @@ const DrawerWrapper = () => (
     />
     <Drawer.Screen name="Request Feedback" component={RequestFeedback} />
     <Drawer.Screen name="Request Inspection" component={RequestInspections} />
+    <Drawer.Screen
+      name="View Supervisors"
+      component={ViewMessSupervisor}
+      
+    />
     <Drawer.Screen name="Updates" component={ProvideUpdates} />
   </Drawer.Navigator>
 );

@@ -25,7 +25,7 @@ const ReportIssue = () => {
 
   useEffect(() => {
     if (!user) {
-      Alert.alert("Unauthenticated", "Please log in to report an issue.");
+      // Alert.alert("Unauthenticated", "Please log in to report an issue.");
     }
   }, [user]);
 

@@ -123,16 +123,6 @@ const LoginPage = ({ navigation }) => {
           <Text style={styles.buttonText}>Log In</Text>
         </TouchableOpacity>
         <View style={styles.linksContainer}>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert(
-                "Info",
-                "Forgot Password functionality not implemented."
-              )
-            }
-          >
-            <Text style={styles.linkText}>Forgot Password</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Register")}>
             <Text style={styles.linkText}>Register</Text>
           </TouchableOpacity>
